@@ -25,6 +25,7 @@ class Program
             {
                 // Register configuration sections
                 services.Configure<AzureAISettings>(configuration.GetSection(AzureAISettings.SectionName));
+                services.Configure<PipelineSettings>(configuration.GetSection(PipelineSettings.SectionName));
                 services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
                 services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
                 services.Configure<PreprocessingSettings>(configuration.GetSection(PreprocessingSettings.SectionName));

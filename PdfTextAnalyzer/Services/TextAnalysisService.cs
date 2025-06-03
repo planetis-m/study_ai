@@ -8,26 +8,32 @@ public class TextAnalysisService : ITextAnalysisService
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly ITextPreprocessorService _textPreprocessor;
     private readonly IAzureAiService _azureAiService;
-    private readonly AnalysisSettings _settings;
+    private readonly PipelineSettings _pipelineSettings;
 
     public TextAnalysisService(
         IPdfTextExtractor pdfExtractor,
         ITextPreprocessorService textPreprocessor,
         IAzureAiService azureAiService,
-        IOptions<AnalysisSettings> settings)
+        IOptions<PipelineSettings> pipelineSettings)
     {
         _pdfExtractor = pdfExtractor;
         _textPreprocessor = textPreprocessor;
         _azureAiService = azureAiService;
-        _settings = settings.Value;
+        _pipelineSettings = pipelineSettings.Value;
     }
 
     public async Task AnalyzePdfAsync(string pdfPath)
     {
         Console.WriteLine($"Processing PDF: {pdfPath}");
-        Console.WriteLine("Extracting text from PDF...");
 
         // Step 1: Extract text from PDF
+        if (!_pipelineSettings.PdfExtraction)
+        {
+            Console.WriteLine("PDF extraction is disabled.");
+            return;
+        }
+
+        Console.WriteLine("Extracting text from PDF...");
         var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
 
         if (string.IsNullOrWhiteSpace(extractedText))
@@ -47,27 +53,42 @@ public class TextAnalysisService : ITextAnalysisService
         Console.WriteLine(preview);
         Console.WriteLine("\n--- End Raw Preview ---\n");
 
-        // Step 2: Clean and format the extracted text using smaller model
-        Console.WriteLine("Cleaning and formatting text with preprocessing model...");
-        var cleanedText = await _textPreprocessor.CleanAndFormatTextAsync(extractedText);
+        // Step 2: Clean and format the extracted text using preprocessing model
+        string cleanedText = extractedText;
+        if (_pipelineSettings.Preprocessing)
+        {
+            Console.WriteLine("Cleaning and formatting text with preprocessing model...");
+            cleanedText = await _textPreprocessor.CleanAndFormatTextAsync(extractedText);
 
-        Console.WriteLine($"Cleaned text: {cleanedText.Length} characters.");
+            Console.WriteLine($"Cleaned text: {cleanedText.Length} characters.");
 
-        // Show a preview of cleaned text
-        var cleanedPreview = cleanedText.Length > 500
-            ? cleanedText.Substring(0, 500) + "..."
-            : cleanedText;
+            // Show a preview of cleaned text
+            var cleanedPreview = cleanedText.Length > 500
+                ? cleanedText.Substring(0, 500) + "..."
+                : cleanedText;
 
-        Console.WriteLine("\n--- Cleaned Text Preview ---");
-        Console.WriteLine(cleanedPreview);
-        Console.WriteLine("\n--- End Cleaned Preview ---\n");
+            Console.WriteLine("\n--- Cleaned Text Preview ---");
+            Console.WriteLine(cleanedPreview);
+            Console.WriteLine("\n--- End Cleaned Preview ---\n");
+        }
+        else
+        {
+            Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
+        }
 
         // Step 3: Send cleaned text to main LLM for analysis
-        Console.WriteLine("Sending cleaned text to main AI model for analysis...");
-        var analysis = await _azureAiService.AnalyzeTextAsync(cleanedText);
+        if (_pipelineSettings.Analysis)
+        {
+            Console.WriteLine("Sending text to main AI model for analysis...");
+            var analysis = await _azureAiService.AnalyzeTextAsync(cleanedText);
 
-        Console.WriteLine("\n--- AI Analysis ---");
-        Console.WriteLine(analysis);
-        Console.WriteLine("\n--- End Analysis ---");
+            Console.WriteLine("\n--- AI Analysis ---");
+            Console.WriteLine(analysis);
+            Console.WriteLine("\n--- End Analysis ---");
+        }
+        else
+        {
+            Console.WriteLine("Text analysis is disabled.");
+        }
     }
 }

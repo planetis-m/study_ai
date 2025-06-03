@@ -43,9 +43,9 @@ public class TextPreprocessorService : ITextPreprocessorService
 
         var options = new ChatCompletionsOptions(messages)
         {
-            Temperature = _preprocessingSettings.Temperature,
-            MaxTokens = _preprocessingSettings.MaxTokens,
-            Model = _preprocessingSettings.ModelName
+            Temperature = _preprocessingSettings.Model.Temperature,
+            MaxTokens = _preprocessingSettings.Model.MaxTokens,
+            Model = _preprocessingSettings.Model.ModelName
         };
 
         try

@@ -55,9 +55,9 @@ public class AzureAiService : IAzureAiService
 
         var options = new ChatCompletionsOptions(messages)
         {
-            Temperature = _aiSettings.Temperature,
-            MaxTokens = _aiSettings.MaxTokens,
-            Model = _aiSettings.ModelName
+            Temperature = _analysisSettings.Model.Temperature,
+            MaxTokens = _analysisSettings.Model.MaxTokens,
+            Model = _analysisSettings.Model.ModelName
         };
 
         try
