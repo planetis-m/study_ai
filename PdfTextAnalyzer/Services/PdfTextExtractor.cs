@@ -14,9 +14,11 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             foreach (Page page in document.GetPages())
             {
-                var text = page.Text;
                 textBuilder.AppendLine($"--- Page {page.Number} ---");
-                textBuilder.AppendLine(text);
+
+                var words = page.GetWords();
+                var pageText = string.Join(" ", words.Select(w => w.Text));
+                textBuilder.AppendLine(pageText);
                 textBuilder.AppendLine();
             }
 
