@@ -21,13 +21,34 @@ public class PdfTextExtractor : IPdfTextExtractor
             {
                 textBuilder.AppendLine($"--- Page {page.Number} ---");
 
-                var wordExtractor = NearestNeighbourWordExtractor.Instance;
-                var words = page.GetWords(wordExtractor);
+                // 0. Preprocessing - get letters from the page
+                var letters = page.Letters;
 
-                var textBlocks = DefaultPageSegmenter.Instance.GetBlocks(words);
-                foreach (var block in textBlocks) {
-                    textBuilder.AppendLine(block.ToString());
+                // 1. Extract words using advanced word extractor
+                var wordExtractor = NearestNeighbourWordExtractor.Instance;
+                var words = wordExtractor.GetWords(letters);
+
+                // 2. Segment page into text blocks
+                var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
+                {
+                    WithinLineBinSize = 15,
+                    BetweenLineBinSize = 15
+                };
+                var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
+                var textBlocks = pageSegmenter.GetBlocks(words);
+
+                // 3. Detect reading order for better text flow
+                var readingOrder = UnsupervisedReadingOrderDetector.Instance;
+                var orderedTextBlocks = readingOrder.Get(textBlocks);
+
+                // 4. Extract and normalize text from ordered blocks
+                foreach (var block in orderedTextBlocks)
+                {
+                    var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
+                    textBuilder.AppendLine(normalizedText);
                 }
+
+                textBuilder.AppendLine();
             }
 
             return textBuilder.ToString();
