@@ -62,4 +62,29 @@ public class PdfTextExtractor : IPdfTextExtractor
 
         return textBuilder.ToString();
     }
+
+    private string ExtractPageTextFallback(Page page)
+    {
+        var textBuilder = new StringBuilder();
+
+        // 0. Preprocessing - get letters from the page
+        var letters = page.Letters;
+
+        // 1. Extract words using advanced word extractor
+        var wordExtractor = NearestNeighbourWordExtractor.Instance;
+        var words = wordExtractor.GetWords(letters);
+
+        // 2. Use simple default page segmenter as fallback
+        var pageSegmenter = DefaultPageSegmenter.Instance;
+        var textBlocks = pageSegmenter.GetBlocks(words);
+
+        // 3. Extract and normalize text from blocks (no reading order detection needed for simple segmenter)
+        foreach (var block in textBlocks)
+        {
+            var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
+            textBuilder.AppendLine(normalizedText);
+        }
+
+        return textBuilder.ToString();
+    }
 }
