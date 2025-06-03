@@ -2,5 +2,5 @@ namespace PdfTextAnalyzer.Services;
 
 public interface ITextAnalysisService
 {
-    Task AnalyzePdfAsync(string pdfPath);
+    Task<string> AnalyzeTextAsync(string text);
 }

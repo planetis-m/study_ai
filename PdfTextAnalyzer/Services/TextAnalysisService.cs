@@ -3,86 +3,29 @@ using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public class TextAnalysisService : ITextAnalysisService
+public class TextAnalysisService : AiServiceBase, ITextAnalysisService
 {
-    private readonly IPdfTextExtractor _pdfExtractor;
-    private readonly ITextPreprocessorService _textPreprocessor;
-    private readonly IAzureAiService _azureAiService;
-    private readonly PipelineSettings _pipelineSettings;
+    private readonly AnalysisSettings _analysisSettings;
 
-    public TextAnalysisService(
-        IPdfTextExtractor pdfExtractor,
-        ITextPreprocessorService textPreprocessor,
-        IAzureAiService azureAiService,
-        IOptions<PipelineSettings> pipelineSettings)
+    public TextAnalysisService(IOptions<AzureAISettings> aiSettings, IOptions<AnalysisSettings> analysisSettings)
+        : base(aiSettings)
     {
-        _pdfExtractor = pdfExtractor;
-        _textPreprocessor = textPreprocessor;
-        _azureAiService = azureAiService;
-        _pipelineSettings = pipelineSettings.Value;
+        _analysisSettings = analysisSettings.Value;
     }
 
-    public async Task AnalyzePdfAsync(string pdfPath)
+    public async Task<string> AnalyzeTextAsync(string text)
     {
-        Console.WriteLine($"Processing PDF: {pdfPath}");
+        if (string.IsNullOrWhiteSpace(text))
+            throw new ArgumentException("Text cannot be null or empty", nameof(text));
 
-        // Step 1: Extract text from PDF
-        Console.WriteLine("Extracting text from PDF...");
-        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
+        var userMessage = $"{_analysisSettings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
 
-        if (string.IsNullOrWhiteSpace(extractedText))
-        {
-            Console.WriteLine("No text could be extracted from the PDF.");
-            return;
-        }
-
-        Console.WriteLine($"Extracted {extractedText.Length} characters from PDF.");
-
-        // Show a preview of extracted text
-        var preview = extractedText.Length > 500
-            ? extractedText.Substring(0, 500) + "..."
-            : extractedText;
-
-        Console.WriteLine("\n--- Raw Extracted Text Preview ---");
-        Console.WriteLine(preview);
-        Console.WriteLine("\n--- End Raw Preview ---\n");
-
-        // Step 2: Clean and format the extracted text using preprocessing model
-        string cleanedText = extractedText;
-        if (_pipelineSettings.Preprocessing)
-        {
-            Console.WriteLine("Cleaning and formatting text with preprocessing model...");
-            cleanedText = await _textPreprocessor.CleanAndFormatTextAsync(extractedText);
-
-            Console.WriteLine($"Cleaned text: {cleanedText.Length} characters.");
-
-            // Show a preview of cleaned text
-            var cleanedPreview = cleanedText.Length > 500
-                ? cleanedText.Substring(0, 500) + "..."
-                : cleanedText;
-
-            Console.WriteLine("\n--- Cleaned Text Preview ---");
-            Console.WriteLine(cleanedText);
-            Console.WriteLine("\n--- End Cleaned Preview ---\n");
-        }
-        else
-        {
-            Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
-        }
-
-        // Step 3: Send cleaned text to main LLM for analysis
-        if (_pipelineSettings.Analysis)
-        {
-            Console.WriteLine("Sending text to main AI model for analysis...");
-            var analysis = await _azureAiService.AnalyzeTextAsync(cleanedText);
-
-            Console.WriteLine("\n--- AI Analysis ---");
-            Console.WriteLine(analysis);
-            Console.WriteLine("\n--- End Analysis ---");
-        }
-        else
-        {
-            Console.WriteLine("Text analysis is disabled.");
-        }
+        return await CallAiServiceAsync(
+            _analysisSettings.SystemMessage,
+            userMessage,
+            _analysisSettings.Model.ModelName,
+            _analysisSettings.Model.Temperature,
+            _analysisSettings.Model.MaxTokens
+        );
     }
 }

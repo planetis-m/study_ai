@@ -5,12 +5,12 @@ using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public abstract class BaseAiService
+public abstract class AiServiceBase
 {
     protected readonly ChatCompletionsClient _client;
     protected readonly AzureAISettings _aiSettings;
 
-    protected BaseAiService(IOptions<AzureAISettings> aiSettings)
+    protected AiServiceBase(IOptions<AzureAISettings> aiSettings)
     {
         _aiSettings = aiSettings.Value;
 

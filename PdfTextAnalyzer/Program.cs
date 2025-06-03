@@ -32,14 +32,14 @@ class Program
 
                 // Register services
                 services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
-                services.AddScoped<ITextPreprocessorService, TextPreprocessorService>();
-                services.AddScoped<IAzureAiService, AzureAiService>();
+                services.AddScoped<ITextCleaningService, TextCleaningService>();
                 services.AddScoped<ITextAnalysisService, TextAnalysisService>();
+                services.AddScoped<IPdfAnalysisPipeline, PdfAnalysisPipeline>();
             })
             .Build();
 
         // Get the service and run
-        var textAnalysisService = host.Services.GetRequiredService<ITextAnalysisService>();
+        var pdfAnalysisPipeline = host.Services.GetRequiredService<IPdfAnalysisPipeline>();
 
         if (args.Length == 0)
         {
@@ -58,7 +58,7 @@ class Program
 
         try
         {
-            await textAnalysisService.AnalyzePdfAsync(pdfPath);
+            await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath);
         }
         catch (Exception ex)
         {

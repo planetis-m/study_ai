@@ -3,11 +3,11 @@ using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public class TextPreprocessorService : BaseAiService, ITextPreprocessorService
+public class TextCleaningService : AiServiceBase, ITextCleaningService
 {
     private readonly PreprocessingSettings _preprocessingSettings;
 
-    public TextPreprocessorService(
+    public TextCleaningService(
         IOptions<AzureAISettings> aiSettings,
         IOptions<PreprocessingSettings> preprocessingSettings)
         : base(aiSettings)
@@ -20,7 +20,7 @@ public class TextPreprocessorService : BaseAiService, ITextPreprocessorService
         if (string.IsNullOrWhiteSpace(rawText))
             throw new ArgumentException("Raw text cannot be null or empty", nameof(rawText));
 
-        var userMessage = $"{_preprocessingSettings.CleaningPrompt}\n\n---\n\nRaw text:\n{rawText}";
+        var userMessage = $"{_preprocessingSettings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
 
         return await CallAiServiceAsync(
             _preprocessingSettings.SystemMessage,

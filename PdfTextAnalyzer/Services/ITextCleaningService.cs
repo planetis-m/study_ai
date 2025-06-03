@@ -1,6 +1,6 @@
 namespace PdfTextAnalyzer.Services;
 
-public interface ITextPreprocessorService
+public interface ITextCleaningService
 {
     Task<string> CleanAndFormatTextAsync(string rawText);
 }
