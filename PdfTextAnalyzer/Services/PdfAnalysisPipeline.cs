@@ -62,7 +62,7 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
                 : cleanedText;
 
             Console.WriteLine("\n--- Cleaned Text Preview ---");
-            Console.WriteLine(cleanedText);
+            Console.WriteLine(cleanedPreview);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
         else
