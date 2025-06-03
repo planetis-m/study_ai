@@ -19,39 +19,47 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             foreach (var page in document.GetPages())
             {
-                textBuilder.AppendLine($"--- Page {page.Number} ---");
-
-                // 0. Preprocessing - get letters from the page
-                var letters = page.Letters;
-
-                // 1. Extract words using advanced word extractor
-                var wordExtractor = NearestNeighbourWordExtractor.Instance;
-                var words = wordExtractor.GetWords(letters);
-
-                // 2. Segment page into text blocks
-                var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
-                {
-                    WithinLineBinSize = 15,
-                    BetweenLineBinSize = 15
-                };
-                var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
-                var textBlocks = pageSegmenter.GetBlocks(words);
-
-                // 3. Detect reading order for better text flow
-                var readingOrder = UnsupervisedReadingOrderDetector.Instance;
-                var orderedTextBlocks = readingOrder.Get(textBlocks);
-
-                // 4. Extract and normalize text from ordered blocks
-                foreach (var block in orderedTextBlocks)
-                {
-                    var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
-                    textBuilder.AppendLine(normalizedText);
-                }
-
-                textBuilder.AppendLine();
+                // textBuilder.AppendLine($"--- Page {page.Number} ---");
+                var pageText = ExtractPageText(page);
+                textBuilder.Append(pageText);
+                // textBuilder.AppendLine();
             }
-
             return textBuilder.ToString();
         });
+    }
+
+    private string ExtractPageText(Page page)
+    {
+        var textBuilder = new StringBuilder();
+
+        // 0. Preprocessing - get letters from the page
+        var letters = page.Letters;
+
+        // 1. Extract words using advanced word extractor
+        var wordExtractor = NearestNeighbourWordExtractor.Instance;
+        var words = wordExtractor.GetWords(letters);
+
+        // 2. Segment page into text blocks with balanced settings
+        var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
+        {
+            WithinLineBinSize = 15,
+            BetweenLineBinSize = 15
+        };
+
+        var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
+        var textBlocks = pageSegmenter.GetBlocks(words);
+
+        // 3. Detect reading order for better text flow
+        var readingOrder = UnsupervisedReadingOrderDetector.Instance;
+        var orderedTextBlocks = readingOrder.Get(textBlocks);
+
+        // 4. Extract and normalize text from ordered blocks
+        foreach (var block in orderedTextBlocks)
+        {
+            var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
+            textBuilder.AppendLine(normalizedText);
+        }
+
+        return textBuilder.ToString();
     }
 }
