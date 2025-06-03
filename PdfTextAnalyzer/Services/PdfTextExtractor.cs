@@ -9,7 +9,7 @@ namespace PdfTextAnalyzer.Services;
 
 public class PdfTextExtractor : IPdfTextExtractor
 {
-    public async Task<string> ExtractTextAsync(string pdfPath)
+    public async Task<string> ExtractTextAsync(string pdfPath, bool useAdvancedExtraction = false)
     {
         return await Task.Run(() =>
         {
@@ -20,7 +20,7 @@ public class PdfTextExtractor : IPdfTextExtractor
             foreach (var page in document.GetPages())
             {
                 // textBuilder.AppendLine($"--- Page {page.Number} ---");
-                var pageText = ExtractPageText(page);
+                var pageText = ExtractPageText(page, useAdvancedExtraction);
                 textBuilder.Append(pageText);
                 // textBuilder.AppendLine();
             }
@@ -28,7 +28,19 @@ public class PdfTextExtractor : IPdfTextExtractor
         });
     }
 
-    private string ExtractPageText(Page page)
+    private string ExtractPageText(Page page, bool useAdvancedExtraction)
+    {
+        if (useAdvancedExtraction)
+        {
+            return ExtractPageTextAdvanced(page);
+        }
+        else
+        {
+            return ExtractPageTextSimple(page);
+        }
+    }
+
+    private string ExtractPageTextAdvanced(Page page)
     {
         var textBuilder = new StringBuilder();
 
@@ -63,7 +75,7 @@ public class PdfTextExtractor : IPdfTextExtractor
         return textBuilder.ToString();
     }
 
-    private string ExtractPageTextFallback(Page page)
+    private string ExtractPageTextSimple(Page page)
     {
         var textBuilder = new StringBuilder();
 
