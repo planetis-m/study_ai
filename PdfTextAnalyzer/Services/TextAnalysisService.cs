@@ -35,17 +35,14 @@ public class TextAnalysisService : ITextAnalysisService
 
         Console.WriteLine($"Extracted {extractedText.Length} characters from PDF.");
 
-        // Show preview if configured
-        if (_settings.ShowTextPreview)
-        {
-            var preview = extractedText.Length > _settings.PreviewLength
-                ? extractedText.Substring(0, _settings.PreviewLength) + "..."
-                : extractedText;
+        // Show a preview of extracted text
+        var preview = extractedText.Length > 500
+            ? extractedText.Substring(0, 500) + "..."
+            : extractedText;
 
-            Console.WriteLine("\n--- Extracted Text Preview ---");
-            Console.WriteLine(preview);
-            Console.WriteLine("\n--- End Preview ---\n");
-        }
+        Console.WriteLine("\n--- Extracted Text Preview ---");
+        Console.WriteLine(preview);
+        Console.WriteLine("\n--- End Preview ---\n");
 
         // Send to LLM for analysis
         Console.WriteLine("Sending text to Azure AI for analysis...");

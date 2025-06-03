@@ -77,15 +77,15 @@ public class PdfTextExtractor : IPdfTextExtractor
         // Segment page into text blocks with configured settings
         var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
         {
-            WithinLineBinSize = _settings.AdvancedOptions.WithinLineBinSize,
-            BetweenLineBinSize = _settings.AdvancedOptions.BetweenLineBinSize
+            WithinLineBinSize = _settings.WithinLineBinSize,
+            BetweenLineBinSize = _settings.BetweenLineBinSize
         };
 
         var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
         var textBlocks = pageSegmenter.GetBlocks(words);
 
         // Apply reading order detection if enabled
-        if (_settings.AdvancedOptions.UseReadingOrderDetection)
+        if (_settings.UseReadingOrderDetection)
         {
             var readingOrder = UnsupervisedReadingOrderDetector.Instance;
             textBlocks = readingOrder.Get(textBlocks).ToList();

@@ -24,7 +24,6 @@ class Program
             .ConfigureServices((context, services) =>
             {
                 // Register configuration sections
-                services.Configure<ApplicationSettings>(configuration.GetSection(ApplicationSettings.SectionName));
                 services.Configure<AzureAISettings>(configuration.GetSection(AzureAISettings.SectionName));
                 services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
                 services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
