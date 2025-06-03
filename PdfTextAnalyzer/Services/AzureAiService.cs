@@ -1,42 +1,41 @@
 using Azure;
 using Azure.AI.Inference;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
 public class AzureAiService : IAzureAiService
 {
     private readonly ChatCompletionsClient _client;
-    private readonly string _modelName;
-    private readonly IConfiguration _configuration;
+    private readonly AzureAISettings _aiSettings;
+    private readonly AnalysisSettings _analysisSettings;
 
-    public AzureAiService(IConfiguration configuration)
+    public AzureAiService(IOptions<AzureAISettings> aiSettings, IOptions<AnalysisSettings> analysisSettings)
     {
-        _configuration = configuration;
-        var endpoint = configuration["AzureAI:Endpoint"] ??
+        _aiSettings = aiSettings.Value;
+        _analysisSettings = analysisSettings.Value;
+
+        if (string.IsNullOrWhiteSpace(_aiSettings.Endpoint))
             throw new InvalidOperationException("AzureAI:Endpoint not configured");
-        var apiKey = configuration["AzureAI:ApiKey"] ??
+        if (string.IsNullOrWhiteSpace(_aiSettings.ApiKey))
             throw new InvalidOperationException("AzureAI:ApiKey not configured");
-        _modelName = configuration["AzureAI:ModelName"] ?? "gpt-4o-mini";
 
         _client = new ChatCompletionsClient(
-            new Uri(endpoint),
-            new AzureKeyCredential(apiKey),
+            new Uri(_aiSettings.Endpoint),
+            new AzureKeyCredential(_aiSettings.ApiKey),
             new AzureAIInferenceClientOptions()
         );
     }
 
     public async Task<string> AnalyzeTextAsync(string text)
     {
-        var defaultPrompt = GetDefaultUserPrompt();
-        var defaultSystemMessage = GetDefaultSystemMessage();
-        return await AnalyzeTextAsync(text, defaultPrompt, defaultSystemMessage);
+        return await AnalyzeTextAsync(text, _analysisSettings.DefaultPrompt, _analysisSettings.SystemMessage);
     }
 
     public async Task<string> AnalyzeTextAsync(string text, string userPrompt)
     {
-        var defaultSystemMessage = GetDefaultSystemMessage();
-        return await AnalyzeTextAsync(text, userPrompt, defaultSystemMessage);
+        return await AnalyzeTextAsync(text, userPrompt, _analysisSettings.SystemMessage);
     }
 
     public async Task<string> AnalyzeTextAsync(string text, string userPrompt, string systemMessage)
@@ -48,7 +47,6 @@ public class AzureAiService : IAzureAiService
         if (string.IsNullOrWhiteSpace(systemMessage))
             throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
 
-        // Structure the content more clearly
         var userMessageContent = new List<ChatMessageContentItem>
         {
             new ChatMessageTextContentItem("Task: " + userPrompt),
@@ -65,16 +63,14 @@ public class AzureAiService : IAzureAiService
 
         var options = new ChatCompletionsOptions(messages)
         {
-            // Temperature = 1.0f,
-            // NucleusSamplingFactor = 1.0f,
-            MaxTokens = 1000,
-            Model = _modelName
+            Temperature = _aiSettings.Temperature,
+            MaxTokens = _aiSettings.MaxTokens,
+            Model = _aiSettings.ModelName
         };
 
         try
         {
             var response = await _client.CompleteAsync(options);
-            // Check if response has value before accessing it
             if (!response.HasValue)
             {
                 throw new InvalidOperationException("No response received from Azure AI service");
@@ -85,17 +81,5 @@ public class AzureAiService : IAzureAiService
         {
             throw new InvalidOperationException($"Failed to get response from Azure AI: {ex.Message}", ex);
         }
-    }
-
-    private string GetDefaultSystemMessage()
-    {
-        return _configuration["Analysis:SystemMessage"] ??
-               "You are a helpful AI assistant that analyzes and summarizes text content.";
-    }
-
-    private string GetDefaultUserPrompt()
-    {
-        return _configuration["Analysis:DefaultPrompt"] ??
-               "Please provide a concise summary of the following document and identify the key points:";
     }
 }

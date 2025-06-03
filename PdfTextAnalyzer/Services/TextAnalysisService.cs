@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -6,16 +7,16 @@ public class TextAnalysisService : ITextAnalysisService
 {
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly IAzureAiService _azureAiService;
-    private readonly IConfiguration _configuration;
+    private readonly AnalysisSettings _settings;
 
     public TextAnalysisService(
         IPdfTextExtractor pdfExtractor,
         IAzureAiService azureAiService,
-        IConfiguration configuration)
+        IOptions<AnalysisSettings> settings)
     {
         _pdfExtractor = pdfExtractor;
         _azureAiService = azureAiService;
-        _configuration = configuration;
+        _settings = settings.Value;
     }
 
     public async Task AnalyzePdfAsync(string pdfPath)
@@ -24,11 +25,7 @@ public class TextAnalysisService : ITextAnalysisService
         Console.WriteLine("Extracting text from PDF...");
 
         // Extract text from PDF
-        var useAdvancedExtraction = _configuration.GetValue<bool>(
-            "PdfExtraction:UseAdvancedExtraction",
-            defaultValue: false
-        );
-        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath, useAdvancedExtraction);
+        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
 
         if (string.IsNullOrWhiteSpace(extractedText))
         {
@@ -38,18 +35,20 @@ public class TextAnalysisService : ITextAnalysisService
 
         Console.WriteLine($"Extracted {extractedText.Length} characters from PDF.");
 
-        // Show a preview of extracted text
-        var preview = extractedText.Length > 500
-            ? extractedText.Substring(0, 500) + "..."
-            : extractedText;
+        // Show preview if configured
+        if (_settings.ShowTextPreview)
+        {
+            var preview = extractedText.Length > _settings.PreviewLength
+                ? extractedText.Substring(0, _settings.PreviewLength) + "..."
+                : extractedText;
 
-        Console.WriteLine("\n--- Extracted Text Preview ---");
-        Console.WriteLine(preview);
-        Console.WriteLine("\n--- End Preview ---\n");
+            Console.WriteLine("\n--- Extracted Text Preview ---");
+            Console.WriteLine(preview);
+            Console.WriteLine("\n--- End Preview ---\n");
+        }
 
-        // Send to LLM for analysis using configured defaults
+        // Send to LLM for analysis
         Console.WriteLine("Sending text to Azure AI for analysis...");
-
         var analysis = await _azureAiService.AnalyzeTextAsync(extractedText);
 
         Console.WriteLine("\n--- AI Analysis ---");

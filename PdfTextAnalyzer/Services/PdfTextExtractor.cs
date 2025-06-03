@@ -1,15 +1,24 @@
 using System.Text;
+using Microsoft.Extensions.Options;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
+using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
 public class PdfTextExtractor : IPdfTextExtractor
 {
-    public async Task<string> ExtractTextAsync(string pdfPath, bool useAdvancedExtraction = false)
+    private readonly PdfExtractionSettings _settings;
+
+    public PdfTextExtractor(IOptions<PdfExtractionSettings> settings)
+    {
+        _settings = settings.Value;
+    }
+
+    public async Task<string> ExtractTextAsync(string pdfPath)
     {
         return await Task.Run(() =>
         {
@@ -19,54 +28,35 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             foreach (var page in document.GetPages())
             {
-                // textBuilder.AppendLine($"--- Page {page.Number} ---");
-                var pageText = ExtractPageText(page, useAdvancedExtraction);
+                var pageText = ExtractPageText(page);
                 textBuilder.Append(pageText);
-                // textBuilder.AppendLine();
             }
             return textBuilder.ToString();
         });
     }
 
-    private string ExtractPageText(Page page, bool useAdvancedExtraction)
+    private string ExtractPageText(Page page)
     {
-        if (useAdvancedExtraction)
-        {
-            return ExtractPageTextAdvanced(page);
-        }
-        else
-        {
-            return ExtractPageTextSimple(page);
-        }
+        return _settings.UseAdvancedExtraction
+            ? ExtractPageTextAdvanced(page)
+            : ExtractPageTextSimple(page);
     }
 
-    private string ExtractPageTextAdvanced(Page page)
+    private string ExtractPageTextSimple(Page page)
     {
         var textBuilder = new StringBuilder();
-
-        // 0. Preprocessing - get letters from the page
         var letters = page.Letters;
 
-        // 1. Extract words using advanced word extractor
+        // Extract words using advanced word extractor
         var wordExtractor = NearestNeighbourWordExtractor.Instance;
         var words = wordExtractor.GetWords(letters);
 
-        // 2. Segment page into text blocks with balanced settings
-        var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
-        {
-            WithinLineBinSize = 15,
-            BetweenLineBinSize = 15
-        };
-
-        var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
+        // Use simple default page segmenter as fallback
+        var pageSegmenter = DefaultPageSegmenter.Instance;
         var textBlocks = pageSegmenter.GetBlocks(words);
 
-        // 3. Detect reading order for better text flow
-        var readingOrder = UnsupervisedReadingOrderDetector.Instance;
-        var orderedTextBlocks = readingOrder.Get(textBlocks);
-
-        // 4. Extract and normalize text from ordered blocks
-        foreach (var block in orderedTextBlocks)
+        // Extract and normalize text from blocks
+        foreach (var block in textBlocks)
         {
             var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
             textBuilder.AppendLine(normalizedText);
@@ -75,22 +65,33 @@ public class PdfTextExtractor : IPdfTextExtractor
         return textBuilder.ToString();
     }
 
-    private string ExtractPageTextSimple(Page page)
+    private string ExtractPageTextAdvanced(Page page)
     {
         var textBuilder = new StringBuilder();
-
-        // 0. Preprocessing - get letters from the page
         var letters = page.Letters;
 
-        // 1. Extract words using advanced word extractor
+        // Extract words using advanced word extractor
         var wordExtractor = NearestNeighbourWordExtractor.Instance;
         var words = wordExtractor.GetWords(letters);
 
-        // 2. Use simple default page segmenter as fallback
-        var pageSegmenter = DefaultPageSegmenter.Instance;
+        // Segment page into text blocks with configured settings
+        var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
+        {
+            WithinLineBinSize = _settings.AdvancedOptions.WithinLineBinSize,
+            BetweenLineBinSize = _settings.AdvancedOptions.BetweenLineBinSize
+        };
+
+        var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
         var textBlocks = pageSegmenter.GetBlocks(words);
 
-        // 3. Extract and normalize text from blocks
+        // Apply reading order detection if enabled
+        if (_settings.AdvancedOptions.UseReadingOrderDetection)
+        {
+            var readingOrder = UnsupervisedReadingOrderDetector.Instance;
+            textBlocks = readingOrder.Get(textBlocks).ToList();
+        }
+
+        // Extract and normalize text from blocks
         foreach (var block in textBlocks)
         {
             var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);

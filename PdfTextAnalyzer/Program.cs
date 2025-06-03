@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PdfTextAnalyzer.Services;
+using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer;
 
@@ -13,15 +14,22 @@ class Program
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
             .AddUserSecrets<Program>()
             .AddEnvironmentVariables()
             .Build();
 
-        // Build host
+        // Build host with strongly-typed configuration
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
-                services.AddSingleton<IConfiguration>(configuration);
+                // Register configuration sections
+                services.Configure<ApplicationSettings>(configuration.GetSection(ApplicationSettings.SectionName));
+                services.Configure<AzureAISettings>(configuration.GetSection(AzureAISettings.SectionName));
+                services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
+                services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
+
+                // Register services
                 services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
                 services.AddScoped<IAzureAiService, AzureAiService>();
                 services.AddScoped<ITextAnalysisService, TextAnalysisService>();
