@@ -29,5 +29,5 @@ echo "1. Set your API key: dotnet user-secrets set \"AzureAI:ApiKey\" \"your-api
 echo "2. Place your PDF files in the project directory"
 echo "3. Run: dotnet run -- your-file.pdf"
 echo ""
-echo "For GitHub models, use endpoint: https://models.inference.ai.azure.com"
+echo "For GitHub models, use endpoint: https://models.github.ai/inference"
 echo "Get your GitHub token at: https://github.com/settings/tokens"

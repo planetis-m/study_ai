@@ -1,5 +1,9 @@
+using System.Text;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -9,17 +13,21 @@ public class PdfTextExtractor : IPdfTextExtractor
     {
         return await Task.Run(() =>
         {
-            using var document = PdfDocument.Open(pdfPath);
-            var textBuilder = new System.Text.StringBuilder();
+            var textBuilder = new StringBuilder();
 
-            foreach (Page page in document.GetPages())
+            using var document = PdfDocument.Open(pdfPath);
+
+            foreach (var page in document.GetPages())
             {
                 textBuilder.AppendLine($"--- Page {page.Number} ---");
 
-                var words = page.GetWords();
-                var pageText = string.Join(" ", words.Select(w => w.Text));
-                textBuilder.AppendLine(pageText);
-                textBuilder.AppendLine();
+                var wordExtractor = NearestNeighbourWordExtractor.Instance;
+                var words = page.GetWords(wordExtractor);
+
+                var textBlocks = DefaultPageSegmenter.Instance.GetBlocks(words);
+                foreach (var block in textBlocks) {
+                    textBuilder.AppendLine(block.ToString());
+                }
             }
 
             return textBuilder.ToString();
