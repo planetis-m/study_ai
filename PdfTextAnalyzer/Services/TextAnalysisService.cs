@@ -27,12 +27,6 @@ public class TextAnalysisService : ITextAnalysisService
         Console.WriteLine($"Processing PDF: {pdfPath}");
 
         // Step 1: Extract text from PDF
-        if (!_pipelineSettings.PdfExtraction)
-        {
-            Console.WriteLine("PDF extraction is disabled.");
-            return;
-        }
-
         Console.WriteLine("Extracting text from PDF...");
         var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
 
