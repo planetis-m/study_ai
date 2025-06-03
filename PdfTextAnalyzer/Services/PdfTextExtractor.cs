@@ -90,7 +90,7 @@ public class PdfTextExtractor : IPdfTextExtractor
         var pageSegmenter = DefaultPageSegmenter.Instance;
         var textBlocks = pageSegmenter.GetBlocks(words);
 
-        // 3. Extract and normalize text from blocks (no reading order detection needed for simple segmenter)
+        // 3. Extract and normalize text from blocks
         foreach (var block in textBlocks)
         {
             var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);

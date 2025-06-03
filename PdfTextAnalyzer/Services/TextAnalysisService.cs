@@ -24,7 +24,11 @@ public class TextAnalysisService : ITextAnalysisService
         Console.WriteLine("Extracting text from PDF...");
 
         // Extract text from PDF
-        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
+        var useAdvancedExtraction = _configuration.GetValue<bool>(
+            "PdfExtraction:UseAdvancedExtraction",
+            defaultValue: false
+        );
+        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath, useAdvancedExtraction);
 
         if (string.IsNullOrWhiteSpace(extractedText))
         {
