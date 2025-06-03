@@ -62,7 +62,7 @@ public class TextAnalysisService : ITextAnalysisService
                 : cleanedText;
 
             Console.WriteLine("\n--- Cleaned Text Preview ---");
-            Console.WriteLine(cleanedPreview);
+            Console.WriteLine(cleanedText);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
         else
