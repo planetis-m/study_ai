@@ -15,25 +15,13 @@ public class AzureAiService : BaseAiService, IAzureAiService
 
     public async Task<string> AnalyzeTextAsync(string text)
     {
-        return await AnalyzeTextAsync(text, _analysisSettings.DefaultPrompt, _analysisSettings.SystemMessage);
-    }
-
-    public async Task<string> AnalyzeTextAsync(string text, string userPrompt)
-    {
-        return await AnalyzeTextAsync(text, userPrompt, _analysisSettings.SystemMessage);
-    }
-
-    public async Task<string> AnalyzeTextAsync(string text, string userPrompt, string systemMessage)
-    {
         if (string.IsNullOrWhiteSpace(text))
             throw new ArgumentException("Text cannot be null or empty", nameof(text));
-        if (string.IsNullOrWhiteSpace(userPrompt))
-            throw new ArgumentException("User prompt cannot be null or empty", nameof(userPrompt));
 
-        var userMessage = $"Task: {userPrompt}\n\n---\n\nSlide content:\n{text}";
+        var userMessage = $"Task: {_analysisSettings.DefaultPrompt}\n\n---\n\nSlide content:\n{text}";
 
         return await CallAiServiceAsync(
-            systemMessage,
+            _analysisSettings.SystemMessage,
             userMessage,
             _analysisSettings.Model.ModelName,
             _analysisSettings.Model.Temperature,
