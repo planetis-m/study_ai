@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PdfTextAnalyzer.Services;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Services;
 
 namespace PdfTextAnalyzer;
 
@@ -27,9 +27,11 @@ class Program
                 services.Configure<AzureAISettings>(configuration.GetSection(AzureAISettings.SectionName));
                 services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
                 services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
+                services.Configure<PreprocessingSettings>(configuration.GetSection(PreprocessingSettings.SectionName));
 
                 // Register services
                 services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+                services.AddScoped<ITextPreprocessorService, TextPreprocessorService>();
                 services.AddScoped<IAzureAiService, AzureAiService>();
                 services.AddScoped<ITextAnalysisService, TextAnalysisService>();
             })

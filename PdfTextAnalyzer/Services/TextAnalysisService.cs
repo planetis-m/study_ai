@@ -6,15 +6,18 @@ namespace PdfTextAnalyzer.Services;
 public class TextAnalysisService : ITextAnalysisService
 {
     private readonly IPdfTextExtractor _pdfExtractor;
+    private readonly ITextPreprocessorService _textPreprocessor;
     private readonly IAzureAiService _azureAiService;
     private readonly AnalysisSettings _settings;
 
     public TextAnalysisService(
         IPdfTextExtractor pdfExtractor,
+        ITextPreprocessorService textPreprocessor,
         IAzureAiService azureAiService,
         IOptions<AnalysisSettings> settings)
     {
         _pdfExtractor = pdfExtractor;
+        _textPreprocessor = textPreprocessor;
         _azureAiService = azureAiService;
         _settings = settings.Value;
     }
@@ -24,7 +27,7 @@ public class TextAnalysisService : ITextAnalysisService
         Console.WriteLine($"Processing PDF: {pdfPath}");
         Console.WriteLine("Extracting text from PDF...");
 
-        // Extract text from PDF
+        // Step 1: Extract text from PDF
         var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
 
         if (string.IsNullOrWhiteSpace(extractedText))
@@ -40,13 +43,28 @@ public class TextAnalysisService : ITextAnalysisService
             ? extractedText.Substring(0, 500) + "..."
             : extractedText;
 
-        Console.WriteLine("\n--- Extracted Text Preview ---");
+        Console.WriteLine("\n--- Raw Extracted Text Preview ---");
         Console.WriteLine(preview);
-        Console.WriteLine("\n--- End Preview ---\n");
+        Console.WriteLine("\n--- End Raw Preview ---\n");
 
-        // Send to LLM for analysis
-        Console.WriteLine("Sending text to Azure AI for analysis...");
-        var analysis = await _azureAiService.AnalyzeTextAsync(extractedText);
+        // Step 2: Clean and format the extracted text using smaller model
+        Console.WriteLine("Cleaning and formatting text with preprocessing model...");
+        var cleanedText = await _textPreprocessor.CleanAndFormatTextAsync(extractedText);
+
+        Console.WriteLine($"Cleaned text: {cleanedText.Length} characters.");
+
+        // Show a preview of cleaned text
+        var cleanedPreview = cleanedText.Length > 500
+            ? cleanedText.Substring(0, 500) + "..."
+            : cleanedText;
+
+        Console.WriteLine("\n--- Cleaned Text Preview ---");
+        Console.WriteLine(cleanedPreview);
+        Console.WriteLine("\n--- End Cleaned Preview ---\n");
+
+        // Step 3: Send cleaned text to main LLM for analysis
+        Console.WriteLine("Sending cleaned text to main AI model for analysis...");
+        var analysis = await _azureAiService.AnalyzeTextAsync(cleanedText);
 
         Console.WriteLine("\n--- AI Analysis ---");
         Console.WriteLine(analysis);
