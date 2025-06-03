@@ -47,18 +47,10 @@ public class AzureAiService : IAzureAiService
         if (string.IsNullOrWhiteSpace(systemMessage))
             throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
 
-        var userMessageContent = new List<ChatMessageContentItem>
-        {
-            new ChatMessageTextContentItem("Task: " + userPrompt),
-            new ChatMessageTextContentItem("---"),
-            new ChatMessageTextContentItem("Document to analyze:"),
-            new ChatMessageTextContentItem(text)
-        };
-
         var messages = new List<ChatRequestMessage>
         {
             new ChatRequestSystemMessage(systemMessage),
-            new ChatRequestUserMessage(userMessageContent)
+            new ChatRequestUserMessage($"Task: {userPrompt}\n\n---\n\nSlide content:\n{text}")
         };
 
         var options = new ChatCompletionsOptions(messages)
