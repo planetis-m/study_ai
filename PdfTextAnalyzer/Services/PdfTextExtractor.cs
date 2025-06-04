@@ -1,7 +1,6 @@
 using System.Text;
 using Microsoft.Extensions.Options;
 using UglyToad.PdfPig;
-using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
@@ -43,6 +42,7 @@ public class PdfTextExtractor : IPdfTextExtractor
                     var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
                     textBuilder.AppendLine(normalizedText);
                 }
+                textBuilder.AppendLine("\n---\n");
             }
             return textBuilder.ToString();
         });
@@ -81,8 +81,6 @@ public class PdfTextExtractor : IPdfTextExtractor
 
     private bool IsBlockHeaderOrFooter(TextBlock block, double pageHeight, PdfExtractionSettings settings)
     {
-        if (pageHeight <= 0) return false; // Cannot determine if page height is invalid
-
         // Calculate boundary for the header area (top X% of the page)
         // PdfPig Y coordinates start from the bottom of the page.
         // A block is a header if its lowest point (Bottom) is within the top margin.
