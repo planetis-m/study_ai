@@ -17,7 +17,7 @@ A C# console application designed to extract and process text from PDF lecture s
 
 ### 1. Prerequisites
 
-- .NET 8.0 SDK
+- .NET 9.0 SDK
 - Azure AI account or a GitHub personal access token (for GitHub-hosted models).
 
 ### 2. Configuration
@@ -55,13 +55,14 @@ Default Preprocessing Model (`appsettings.json`): `mistral-ai/mistral-medium-250
 Default Analysis Model (`appsettings.json`): `openai/gpt-4.1`
 
 Example for Analysis Model configuration in `appsettings.json`:
+
 ```json
 {
   "Analysis": {
     "Model": {
       "ModelName": "openai/gpt-4.1",
       "MaxTokens": 4000,
-      "Temperature": 0.3
+      "Temperature": 0.2
     },
     // ... other settings
   }
