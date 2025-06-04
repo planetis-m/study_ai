@@ -7,7 +7,9 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
 {
     private readonly AnalysisSettings _analysisSettings;
 
-    public TextAnalysisService(IOptions<AzureAISettings> aiSettings, IOptions<AnalysisSettings> analysisSettings)
+    public TextAnalysisService(
+        IOptions<AzureAISettings> aiSettings,
+        IOptions<AnalysisSettings> analysisSettings)
         : base(aiSettings)
     {
         _analysisSettings = analysisSettings.Value;
