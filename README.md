@@ -1,127 +1,155 @@
-# PDF Text Analyzer
+# Lecture Slide Analyzer for Exam Prep
 
-A C# console application that extracts text from PDF files using PdfPig and sends it to Azure AI models (including GitHub models) for analysis and summarization.
+A C# console application designed to extract and process text from PDF lecture slides. It uses PdfPig for text extraction, followed by AI-driven cleaning and analysis to help students prepare for exams. The processed information is obtained via Azure AI models, including those hosted by GitHub.
 
 ## Features
 
-- Extract text from PDF files using PdfPig
-- Send extracted text to Azure AI Inference API
-- Support for GitHub models via Azure AI
-- Configurable prompts and models
-- Clean separation of concerns with dependency injection
+- Extract text from PDF lecture slides using PdfPig, with options for advanced extraction and exclusion of headers/footers.
+- **AI-Powered Preprocessing**: Cleans extracted text by removing metadata, instructor details, contact information, formatting artifacts, and repeated course codes, preserving essential educational content. This step utilizes a configurable AI model.
+- **AI-Powered Analysis for Exam Prep**: Analyzes the cleaned slide content to identify key topics, provide detailed explanations of concepts, and extract essential facts or definitions crucial for exam preparation. This step also uses a configurable AI model.
+- Send cleaned text to Azure AI Inference API for analysis.
+- Support for GitHub-hosted models via Azure AI.
+- Configurable AI models, prompts, and temperature settings for both preprocessing and analysis stages, detailed in `appsettings.json`.
+- Clean separation of concerns with dependency injection.
+- Comprehensive error handling.
 
 ## Setup
 
 ### 1. Prerequisites
 
 - .NET 8.0 SDK
-- Azure AI account or GitHub personal access token for GitHub models
+- Azure AI account or a GitHub personal access token (for GitHub-hosted models).
 
 ### 2. Configuration
 
-#### Option A: Using GitHub Models (Recommended)
+The application uses `appsettings.json` for configuration and supports user secrets for sensitive data like API keys.
 
-1. Get a GitHub personal access token with appropriate permissions
-2. Set your API key using user secrets:
+#### API Key and Endpoint:
 
-```bash
-dotnet user-secrets set "AzureAI:ApiKey" "your-github-token"
+Set your API key and endpoint using .NET user secrets.
+
+**Option A: Using GitHub Models (Recommended)**
+
+1.  Get a GitHub personal access token with appropriate permissions.
+2.  Set your API key:
+    ```bash
+    dotnet user-secrets set "AzureAI:ApiKey" "your-github-token"
+    ```
+    The endpoint `https://models.github.ai/inference` is pre-configured in `appsettings.json`.
+
+**Option B: Using Azure AI directly**
+
+1.  Create an Azure AI resource.
+2.  Get your endpoint and API key.
+3.  Configure using user secrets:
+    ```bash
+    dotnet user-secrets set "AzureAI:Endpoint" "your-azure-endpoint"
+    dotnet user-secrets set "AzureAI:ApiKey" "your-azure-api-key"
+    ```
+
+#### Model Configuration:
+
+You can configure the models for preprocessing and analysis in `appsettings.json`. This includes the model name, max tokens, and temperature.
+
+Default Preprocessing Model (`appsettings.json`): `mistral-ai/mistral-medium-2505`
+Default Analysis Model (`appsettings.json`): `openai/gpt-4.1`
+
+Example for Analysis Model configuration in `appsettings.json`:
+```json
+{
+  "Analysis": {
+    "Model": {
+      "ModelName": "openai/gpt-4.1",
+      "MaxTokens": 4000,
+      "Temperature": 0.3
+    },
+    // ... other settings
+  }
+}
 ```
 
-The endpoint `https://models.inference.ai.azure.com` is already configured for GitHub models.
+Refer to `appsettings.json` for the full structure and default values for `PdfExtraction`, `Preprocessing`, and `Analysis` sections.
 
-#### Option B: Using Azure AI directly
+### 3. Build the application:
 
-1. Create an Azure AI resource
-2. Get your endpoint and API key
-3. Configure using user secrets:
-
+Navigate to the `PdfTextAnalyzer` directory:
 ```bash
-dotnet user-secrets set "AzureAI:Endpoint" "your-azure-endpoint"
-dotnet user-secrets set "AzureAI:ApiKey" "your-azure-api-key"
-```
-
-### 3. Available Models
-
-Common GitHub models you can use:
-- `gpt-4o-mini` (default, fast and cost-effective)
-- `gpt-4o`
-- `gpt-3.5-turbo`
-- `claude-3-haiku`
-- `claude-3-sonnet`
-
-Update the model in `appsettings.json` or via user secrets:
-
-```bash
-dotnet user-secrets set "AzureAI:ModelName" "gpt-4o"
+cd PdfTextAnalyzer
+dotnet build
 ```
 
 ## Usage
 
-### Build the application:
+Run the application from within the `PdfTextAnalyzer` directory:
 
 ```bash
-dotnet build
+dotnet run -- path/to/your/lecture_slides.pdf
 ```
 
-### Run the application:
+Example:
 
 ```bash
-dotnet run -- path/to/your/file.pdf
-```
-
-### Example:
-
-```bash
-dotnet run -- sample-document.pdf
+dotnet run -- "Introduction to AI - Week 1.pdf"
 ```
 
 ## Project Structure
 
 ```
-PdfTextAnalyzer/
-├── Program.cs                      # Application entry point
-├── appsettings.json               # Configuration file
-├── PdfTextAnalyzer.csproj         # Project file
-├── Services/
-│   ├── IPdfTextExtractor.cs       # PDF extraction interface
-│   ├── PdfTextExtractor.cs        # PDF extraction implementation
-│   ├── IAzureAiService.cs         # AI service interface
-│   ├── AzureAiService.cs          # AI service implementation
-│   ├── ITextAnalysisService.cs    # Main service interface
-│   └── TextAnalysisService.cs     # Main service implementation
-└── README.md                      # This file
+study_ai/
+├── PdfTextAnalyzer/
+│   ├── PdfTextAnalyzer.csproj         # Project file
+│   ├── Program.cs                      # Application entry point
+│   ├── appsettings.json               # Configuration for models, prompts, PDF extraction, etc.
+│   ├── Configuration/                 # (Contains configuration models - if any, based on current structure)
+│   │   └── # Configuration-related .cs files
+│   ├── Services/
+│   │   ├── AiServiceBase.cs           # Base class for AI service interactions
+│   │   ├── IPdfAnalysisPipeline.cs    # Interface for the PDF analysis pipeline
+│   │   ├── IPdfTextExtractor.cs       # Interface for PDF text extraction
+│   │   ├── ITextAnalysisAiService.cs  # Interface for the AI text analysis service
+│   │   ├── ITextCleaningService.cs    # Interface for text cleaning service
+│   │   ├── PdfAnalysisPipeline.cs     # Implements the PDF analysis pipeline
+│   │   ├── PdfTextExtractor.cs        # Implements PDF text extraction using PdfPig
+│   │   ├── TextAnalysisService.cs     # Implements AI-based text analysis for exam prep
+│   │   └── TextCleaningService.cs     # Implements AI-based text cleaning for slides
+│   └── ... (other files like .cs,.json)
+├── .gitignore
+├── LICENSE
+├── README.md                      # This file
+└── setup.sh                       # Shell script for initial project setup
 ```
 
 ## Customization
 
-### System Message Configuration
+### System and Task Prompts:
 
-You can customize the AI system message in `appsettings.json`:
+The AI's behavior is guided by system messages and task prompts defined in `appsettings.json`.
 
+**Preprocessing Prompts (from `appsettings.json`):**
+-   **System Message**: "You are a content extractor specialized in cleaning PDF lecture slides. You remove metadata, contact information, and formatting artifacts while preserving all educational content..."
+-   **Task Prompt**: "Clean this PDF slide text by removing:\n- Instructor details, emails, contact info\n- Headers, footers, page numbers, timestamps\n- Repeated course codes and metadata\n\nPreserve..."
+
+**Analysis Prompts (from `appsettings.json`):**
+-   **System Message**: "You are an expert teaching assistant. You analyze slide decks and extract key information for exam preparation. You only work with the content provided and do not add external information."
+-   **Task Prompt**: "Analyze the following slide content. For each key topic covered, provide:\n- A detailed explanation of the concept\n- The essential facts or definitions students need for the final exam..."
+
+You can modify these in `appsettings.json` to tailor the AI's output.
+
+### PDF Extraction Options:
+
+Configure PDF extraction behavior in `appsettings.json`:
 ```json
 {
-  "Analysis": {
-    "SystemMessage": "You are an expert document analyst specializing in technical documentation. Provide detailed analysis with structured insights."
+  "PdfExtraction": {
+    "UseAdvancedExtraction": true,
+    "ExcludeHeaderFooter": true
   }
 }
 ```
 
-### Custom User Prompts
+## Error Handling
 
-You can customize the analysis prompt in `appsettings.json`:
-
-```json
-{
-  "Analysis": {
-    "DefaultPrompt": "Extract the main topics and create a bullet-point summary:"
-  }
-}
-```
-
-### Error Handling
-
-The application includes comprehensive error handling for:
+The application includes error handling for:
 - Missing or invalid PDF files
 - API authentication issues
 - Network connectivity problems
@@ -129,7 +157,7 @@ The application includes comprehensive error handling for:
 
 ## Troubleshooting
 
-1. **Authentication Error**: Ensure your API key is correctly set in user secrets
-2. **Model Not Found**: Verify the model name is supported by your chosen service
-3. **PDF Reading Error**: Ensure the PDF is not encrypted or corrupted
-4. **Network Issues**: Check your internet connection and endpoint URL
+1.  **Authentication Error**: Ensure your `AzureAI:ApiKey` is correctly set in user secrets and is valid for the configured `AzureAI:Endpoint`.
+2.  **Model Not Found**: Verify the `ModelName` in `appsettings.json` is correct and supported by your chosen AI service/endpoint.
+3.  **PDF Reading Error**: Ensure the PDF is not encrypted, corrupted, or inaccessible.
+4.  **Network Issues**: Check your internet connection and the AI service endpoint URL.
