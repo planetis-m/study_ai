@@ -70,6 +70,9 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
             Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
         }
 
+        // Remove slide separators to save tokens
+        cleanedText = cleanedText.Replace("\n---\n", "");
+
         // Step 3: Send cleaned text to main LLM for analysis
         if (_pipelineSettings.Analysis)
         {
