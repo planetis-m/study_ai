@@ -1,7 +1,9 @@
 using System.Text;
 using Microsoft.Extensions.Options;
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.DocumentLayoutAnalysis;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
@@ -23,81 +25,101 @@ public class PdfTextExtractor : IPdfTextExtractor
         return await Task.Run(() =>
         {
             var textBuilder = new StringBuilder();
+            // Store PageNumber, TextBlock, and the Height of the page the block is on
+            var allTextBlocks = new List<(int PageNumber, TextBlock Block, double PageHeight)>();
 
             using var document = PdfDocument.Open(pdfPath);
 
             foreach (var page in document.GetPages())
             {
-                var pageText = ExtractPageText(page);
-                textBuilder.Append(pageText);
+                var pageTextBlocks = GetTextBlocks(page);
+                // Add each block with its page number and the page's height
+                allTextBlocks.AddRange(pageTextBlocks.Select(block => (page.Number, block, page.Height)));
+            }
+
+            var excludedBlocks = new HashSet<TextBlock>();
+            if (_settings.ExcludeHeaderFooter && allTextBlocks.Any())
+            {
+                excludedBlocks = IdentifyHeaderFooterBlocks(allTextBlocks, document.NumberOfPages);
+            }
+
+            // Iterate through the collected blocks, now including pageHeight if needed (though not directly here)
+            foreach (var (pageNum, block, pageHeight) in allTextBlocks)
+            {
+                if (!excludedBlocks.Contains(block))
+                {
+                    var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
+                    textBuilder.AppendLine(normalizedText);
+                }
             }
             return textBuilder.ToString();
         });
     }
 
-    private string ExtractPageText(Page page)
+    private IEnumerable<TextBlock> GetTextBlocks(Page page)
     {
-        return _settings.UseAdvancedExtraction
-            ? ExtractPageTextAdvanced(page)
-            : ExtractPageTextSimple(page);
-    }
-
-    private string ExtractPageTextSimple(Page page)
-    {
-        var textBuilder = new StringBuilder();
         var letters = page.Letters;
-
-        // Extract words using advanced word extractor
         var wordExtractor = NearestNeighbourWordExtractor.Instance;
         var words = wordExtractor.GetWords(letters);
 
-        // Use simple default page segmenter as fallback
-        var pageSegmenter = DefaultPageSegmenter.Instance;
-        var textBlocks = pageSegmenter.GetBlocks(words);
-
-        // Extract and normalize text from blocks
-        foreach (var block in textBlocks)
+        IPageSegmenter pageSegmenter;
+        if (_settings.UseAdvancedExtraction)
         {
-            var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
-            textBuilder.AppendLine(normalizedText);
+            var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
+            {
+                WithinLineBinSize = _settings.WithinLineBinSize,
+                BetweenLineBinSize = _settings.BetweenLineBinSize
+            };
+            pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
+        }
+        else
+        {
+            pageSegmenter = DefaultPageSegmenter.Instance;
         }
 
-        return textBuilder.ToString();
-    }
-
-    private string ExtractPageTextAdvanced(Page page)
-    {
-        var textBuilder = new StringBuilder();
-        var letters = page.Letters;
-
-        // Extract words using advanced word extractor
-        var wordExtractor = NearestNeighbourWordExtractor.Instance;
-        var words = wordExtractor.GetWords(letters);
-
-        // Segment page into text blocks with configured settings
-        var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
-        {
-            WithinLineBinSize = _settings.WithinLineBinSize,
-            BetweenLineBinSize = _settings.BetweenLineBinSize
-        };
-
-        var pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
         var textBlocks = pageSegmenter.GetBlocks(words);
 
-        // Apply reading order detection if enabled
-        if (_settings.UseReadingOrderDetection)
+        if (_settings.UseAdvancedExtraction && _settings.UseReadingOrderDetection)
         {
             var readingOrder = UnsupervisedReadingOrderDetector.Instance;
             textBlocks = readingOrder.Get(textBlocks).ToList();
         }
+        return textBlocks;
+    }
 
-        // Extract and normalize text from blocks
-        foreach (var block in textBlocks)
+    private HashSet<TextBlock> IdentifyHeaderFooterBlocks(List<(int PageNumber, TextBlock Block, double PageHeight)> allTextBlocks, int totalPages)
+    {
+        var excludedBlocks = new HashSet<TextBlock>();
+        if (!_settings.ExcludeHeaderFooter) return excludedBlocks;
+
+        // Positional Heuristics
+        foreach (var (pageNum, block, currentPageHeight) in allTextBlocks)
         {
-            var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
-            textBuilder.AppendLine(normalizedText);
-        }
+            if (currentPageHeight <= 0) continue; // Skip if page height is invalid (e.g. 0)
 
-        return textBuilder.ToString();
+            // Defines the Y coordinate that marks the lower boundary of the header area.
+            // Example: page height 1000, margin 10%. Header area is Y=900 to Y=1000. headerBoundary = 900.
+            double headerBoundary = currentPageHeight * (1.0 - _settings.HeaderMarginPercentage / 100.0);
+
+            // Defines the Y coordinate that marks the upper boundary of the footer area.
+            // Example: page height 1000, margin 10%. Footer area is Y=0 to Y=100. footerBoundary = 100.
+            double footerBoundary = currentPageHeight * (_settings.FooterMarginPercentage / 100.0);
+
+            // A block is considered a header if its lowest point (Bottom) is above the headerBoundary.
+            // This means the entire block is within the top X% margin.
+            // PdfPig Y coordinates start from the bottom of the page.
+            if (block.BoundingBox.Bottom > headerBoundary)
+            {
+                excludedBlocks.Add(block);
+            }
+
+            // A block is considered a footer if its highest point (Top) is below the footerBoundary.
+            // This means the entire block is within the bottom X% margin.
+            else if (block.BoundingBox.Top < footerBoundary)
+            {
+                excludedBlocks.Add(block);
+            }
+        }
+        return excludedBlocks;
     }
 }
