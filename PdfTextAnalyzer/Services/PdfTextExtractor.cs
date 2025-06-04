@@ -25,29 +25,21 @@ public class PdfTextExtractor : IPdfTextExtractor
         return await Task.Run(() =>
         {
             var textBuilder = new StringBuilder();
-            // Store TextBlock, and the Height of the page the block is on
-            var allTextBlocks = new List<(TextBlock Block, double PageHeight)>();
 
             using var document = PdfDocument.Open(pdfPath);
 
             foreach (var page in document.GetPages())
             {
                 var pageTextBlocks = GetTextBlocks(page);
-                // Add each block with its page number and the page's height
-                allTextBlocks.AddRange(pageTextBlocks.Select(block => (block, page.Height)));
-            }
 
-            var excludedBlocks = new HashSet<TextBlock>();
-            if (_settings.ExcludeHeaderFooter && allTextBlocks.Any())
-            {
-                excludedBlocks = IdentifyHeaderFooterBlocks(allTextBlocks);
-            }
-
-            // Iterate through the collected blocks
-            foreach (var (block, _) in allTextBlocks)
-            {
-                if (!excludedBlocks.Contains(block))
+                foreach (var block in pageTextBlocks)
                 {
+                    if (_settings.UseAdvancedExtraction &&
+                        _settings.ExcludeHeaderFooter &&
+                        IsBlockHeaderOrFooter(block, page.Height, _settings))
+                    {
+                        continue; // Skip header/footer blocks
+                    }
                     var normalizedText = block.Text.Normalize(NormalizationForm.FormKC);
                     textBuilder.AppendLine(normalizedText);
                 }
@@ -87,38 +79,27 @@ public class PdfTextExtractor : IPdfTextExtractor
         return textBlocks;
     }
 
-    private HashSet<TextBlock> IdentifyHeaderFooterBlocks(List<(TextBlock Block, double PageHeight)> allTextBlocks)
+    private bool IsBlockHeaderOrFooter(TextBlock block, double pageHeight, PdfExtractionSettings settings)
     {
-        var excludedBlocks = new HashSet<TextBlock>();
+        if (pageHeight <= 0) return false; // Cannot determine if page height is invalid
 
-        // Positional Heuristics
-        foreach (var (block, currentPageHeight) in allTextBlocks)
+        // Calculate boundary for the header area (top X% of the page)
+        // PdfPig Y coordinates start from the bottom of the page.
+        // A block is a header if its lowest point (Bottom) is within the top margin.
+        double headerBoundary = pageHeight * (1.0 - settings.HeaderMarginPercentage / 100.0);
+        if (block.BoundingBox.Bottom > headerBoundary)
         {
-            if (currentPageHeight <= 0) continue; // Skip if page height is invalid (e.g. 0)
-
-            // Defines the Y coordinate that marks the lower boundary of the header area.
-            // Example: page height 1000, margin 10%. Header area is Y=900 to Y=1000. headerBoundary = 900.
-            double headerBoundary = currentPageHeight * (1.0 - _settings.HeaderMarginPercentage / 100.0);
-
-            // Defines the Y coordinate that marks the upper boundary of the footer area.
-            // Example: page height 1000, margin 10%. Footer area is Y=0 to Y=100. footerBoundary = 100.
-            double footerBoundary = currentPageHeight * (_settings.FooterMarginPercentage / 100.0);
-
-            // A block is considered a header if its lowest point (Bottom) is above the headerBoundary.
-            // This means the entire block is within the top X% margin.
-            // PdfPig Y coordinates start from the bottom of the page.
-            if (block.BoundingBox.Bottom > headerBoundary)
-            {
-                excludedBlocks.Add(block);
-            }
-
-            // A block is considered a footer if its highest point (Top) is below the footerBoundary.
-            // This means the entire block is within the bottom X% margin.
-            else if (block.BoundingBox.Top < footerBoundary)
-            {
-                excludedBlocks.Add(block);
-            }
+            return true;
         }
-        return excludedBlocks;
+
+        // Calculate boundary for the footer area (bottom Y% of the page)
+        // A block is a footer if its highest point (Top) is within the bottom margin.
+        double footerBoundary = pageHeight * (settings.FooterMarginPercentage / 100.0);
+        if (block.BoundingBox.Top < footerBoundary)
+        {
+            return true;
+        }
+
+        return false;
     }
 }
