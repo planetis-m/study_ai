@@ -25,8 +25,8 @@ public class PdfTextExtractor : IPdfTextExtractor
         return await Task.Run(() =>
         {
             var textBuilder = new StringBuilder();
-            // Store PageNumber, TextBlock, and the Height of the page the block is on
-            var allTextBlocks = new List<(int PageNumber, TextBlock Block, double PageHeight)>();
+            // Store TextBlock, and the Height of the page the block is on
+            var allTextBlocks = new List<(TextBlock Block, double PageHeight)>();
 
             using var document = PdfDocument.Open(pdfPath);
 
@@ -34,17 +34,17 @@ public class PdfTextExtractor : IPdfTextExtractor
             {
                 var pageTextBlocks = GetTextBlocks(page);
                 // Add each block with its page number and the page's height
-                allTextBlocks.AddRange(pageTextBlocks.Select(block => (page.Number, block, page.Height)));
+                allTextBlocks.AddRange(pageTextBlocks.Select(block => (block, page.Height)));
             }
 
             var excludedBlocks = new HashSet<TextBlock>();
             if (_settings.ExcludeHeaderFooter && allTextBlocks.Any())
             {
-                excludedBlocks = IdentifyHeaderFooterBlocks(allTextBlocks, document.NumberOfPages);
+                excludedBlocks = IdentifyHeaderFooterBlocks(allTextBlocks);
             }
 
-            // Iterate through the collected blocks, now including pageHeight if needed (though not directly here)
-            foreach (var (pageNum, block, pageHeight) in allTextBlocks)
+            // Iterate through the collected blocks
+            foreach (var (block, _) in allTextBlocks)
             {
                 if (!excludedBlocks.Contains(block))
                 {
@@ -87,13 +87,12 @@ public class PdfTextExtractor : IPdfTextExtractor
         return textBlocks;
     }
 
-    private HashSet<TextBlock> IdentifyHeaderFooterBlocks(List<(int PageNumber, TextBlock Block, double PageHeight)> allTextBlocks, int totalPages)
+    private HashSet<TextBlock> IdentifyHeaderFooterBlocks(List<(TextBlock Block, double PageHeight)> allTextBlocks)
     {
         var excludedBlocks = new HashSet<TextBlock>();
-        if (!_settings.ExcludeHeaderFooter) return excludedBlocks;
 
         // Positional Heuristics
-        foreach (var (pageNum, block, currentPageHeight) in allTextBlocks)
+        foreach (var (block, currentPageHeight) in allTextBlocks)
         {
             if (currentPageHeight <= 0) continue; // Skip if page height is invalid (e.g. 0)
 
