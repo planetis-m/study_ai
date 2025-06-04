@@ -13,6 +13,6 @@ public class PdfExtractionSettings
     internal bool UseReadingOrderDetection => true;
 
     // Header/Footer Detection Settings
-    internal double HeaderMarginPercentage => 10.0; // top 10%
-    internal double FooterMarginPercentage => 10.0; // bottom 10%
+    internal double HeaderMarginPercentage => 8.0; // top
+    internal double FooterMarginPercentage => 8.0; // bottom
 }
