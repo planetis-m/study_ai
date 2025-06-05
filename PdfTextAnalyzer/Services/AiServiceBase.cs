@@ -56,7 +56,7 @@ public abstract class AiServiceBase
             var response = await _client.CompleteAsync(options);
             if (!response.HasValue)
             {
-                throw new InvalidOperationException($"No response received from Azure AI");
+                throw new InvalidOperationException("No response received from Azure AI");
             }
             return response.Value.Content;
         }
