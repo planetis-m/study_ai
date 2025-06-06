@@ -71,7 +71,7 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
         }
 
         // Remove slide separators to save tokens
-        cleanedText = cleanedText.Replace("\n---\n", "");
+        // cleanedText = cleanedText.Replace("\n---\n", "");
 
         // Step 3: Send cleaned text to main LLM for analysis
         if (_pipelineSettings.Analysis)
