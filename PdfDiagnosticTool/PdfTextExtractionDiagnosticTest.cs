@@ -11,7 +11,7 @@ using UglyToad.PdfPig.Writer;
 using PdfTextAnalyzer.Configuration;
 using PdfTextAnalyzer.Services;
 
-namespace PdfTextAnalyzer.Tests;
+namespace PdfDiagnosticTool;
 
 public class PdfTextExtractionDiagnosticTest
 {
@@ -158,7 +158,7 @@ public class PdfTextExtractionDiagnosticTest
 
         // Visualization: Draw bounding boxes with different colors for different types
         var colorIndex = 0;
-        var colors = new[]
+        var colors = new (byte, byte, byte)[]
         {
             (0, 255, 0),    // Green - normal blocks
             (255, 0, 0),    // Red - header/footer blocks
