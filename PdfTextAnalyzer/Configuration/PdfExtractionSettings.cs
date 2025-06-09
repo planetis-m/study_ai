@@ -9,9 +9,9 @@ public class PdfExtractionSettings
     public bool UseReadingOrderDetection { get; set; } = true;
 
     // Hard-coded sensible defaults - no need to expose these
-    internal double WithinLineMultiplier => 4.0;
+    internal double WithinLineMultiplier => 5.0;
     internal double BetweenLineMultiplier => 1.4;
-    internal int WithinLineBinSize => 10;
+    internal int WithinLineBinSize => 5;
     internal int BetweenLineBinSize => 5;
 
     // Header/Footer Detection Settings

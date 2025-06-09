@@ -8,12 +8,12 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Content;
 
 // Set your paths here
-var sourcePdfPath = "sample1.pdf";  // Place your PDF file here
+var sourcePdfPath = "sample2.pdf";  // Place your PDF file here
 var outputPath = "docstrum_grid_search_output.pdf";
-var pageNumber = 40;
+var pageNumber = 15;
 
 // Define parameter variations for grid search
-var withinLineMultiplierValues = new[] { 3.0, 4.0 };
+var withinLineMultiplierValues = new[] { 4.0, 5.0, 6.0 };
 var betweenLineMultiplierValues = new[] { 1.3, 1.4 };
 var withinLineBoundsValues = new[]
 {
@@ -33,8 +33,8 @@ var angularDifferenceBoundsValues = new[]
     new DocstrumBoundingBoxes.AngleBounds(-30, 30),
     // new DocstrumBoundingBoxes.AngleBounds(-45, 45)
 };
-var withinLineBinSizeValues = new[] { 10 };
-var betweenLineBinSizeValues = new[] { 10, 5 };
+var withinLineBinSizeValues = new[] { 10, 5, 3 };
+var betweenLineBinSizeValues = new[] { 10, 5, 3 };
 
 try
 {
@@ -148,57 +148,6 @@ try
                 }
             }
         }
-
-        // Create summary page
-        var summaryPageBuilder = builder.AddPage(PageSize.A4);
-        summaryPageBuilder.SetTextAndFillColor(0, 0, 0);
-
-        var y = 750;
-        summaryPageBuilder.AddText("Docstrum Grid Search Summary", 16, new PdfPoint(50, y), titleFont);
-        y -= 30;
-
-        summaryPageBuilder.AddText($"Total configurations tested: {configurationNumber - 1}", 12, new PdfPoint(50, y), font);
-        y -= 20;
-
-        summaryPageBuilder.AddText("Parameter ranges tested:", 12, new PdfPoint(50, y), font);
-        y -= 20;
-
-        summaryPageBuilder.AddText($"• WithinLineMultiplier: {string.Join(", ", withinLineMultiplierValues)}", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• BetweenLineMultiplier: {string.Join(", ", betweenLineMultiplierValues)}", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• WithinLineBounds: {string.Join(", ", withinLineBoundsValues.Select(b => $"({b.Lower:F0},{b.Upper:F0})"))} degrees", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• BetweenLineBounds: {string.Join(", ", betweenLineBoundsValues.Select(b => $"({b.Lower:F0},{b.Upper:F0})"))} degrees", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• AngularDifferenceBounds: {string.Join(", ", angularDifferenceBoundsValues.Select(b => $"({b.Lower:F0},{b.Upper:F0})"))} degrees", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• WithinLineBinSize: {string.Join(", ", withinLineBinSizeValues)}", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText($"• BetweenLineBinSize: {string.Join(", ", betweenLineBinSizeValues)}", 10, new PdfPoint(70, y), font);
-        y -= 30;
-
-        summaryPageBuilder.AddText("Legend:", 12, new PdfPoint(50, y), font);
-        y -= 20;
-        summaryPageBuilder.AddText("• Green rectangles: Text block bounding boxes", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• Red numbers: Reading order sequence", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• Light gray lines: Text line diagnostics", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• WLM: WithinLineMultiplier", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• BLM: BetweenLineMultiplier", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• WLB: WithinLineBounds", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• BLB: BetweenLineBounds", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• ADB: AngularDifferenceBounds", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• WLBS: WithinLineBinSize", 10, new PdfPoint(70, y), font);
-        y -= 15;
-        summaryPageBuilder.AddText("• BLBS: BetweenLineBinSize", 10, new PdfPoint(70, y), font);
 
         // Write result to a file
         byte[] fileBytes = builder.Build();
