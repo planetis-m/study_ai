@@ -35,7 +35,7 @@ public class PdfTextExtractor : IPdfTextExtractor
                 {
                     if (_settings.UseAdvancedExtraction &&
                         _settings.ExcludeHeaderFooter &&
-                        IsBlockHeaderOrFooter(block, page.Height, _settings))
+                        IsBlockHeaderOrFooter(block, page.Height))
                     {
                         continue; // Skip header/footer blocks
                     }
@@ -81,12 +81,12 @@ public class PdfTextExtractor : IPdfTextExtractor
         return textBlocks;
     }
 
-    private bool IsBlockHeaderOrFooter(TextBlock block, double pageHeight, PdfExtractionSettings settings)
+    private bool IsBlockHeaderOrFooter(TextBlock block, double pageHeight)
     {
         // Calculate boundary for the header area (top X% of the page)
         // PdfPig Y coordinates start from the bottom of the page.
         // A block is a header if its lowest point (Bottom) is within the top margin.
-        double headerBoundary = pageHeight * (1.0 - settings.HeaderMarginPercentage / 100.0);
+        double headerBoundary = pageHeight * (1.0 - _settings.HeaderMarginPercentage / 100.0);
         if (block.BoundingBox.Bottom > headerBoundary)
         {
             return true;
@@ -94,7 +94,7 @@ public class PdfTextExtractor : IPdfTextExtractor
 
         // Calculate boundary for the footer area (bottom Y% of the page)
         // A block is a footer if its highest point (Top) is within the bottom margin.
-        double footerBoundary = pageHeight * (settings.FooterMarginPercentage / 100.0);
+        double footerBoundary = pageHeight * (_settings.FooterMarginPercentage / 100.0);
         if (block.BoundingBox.Top < footerBoundary)
         {
             return true;
