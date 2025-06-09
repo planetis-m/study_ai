@@ -9,10 +9,12 @@ public class PdfExtractionSettings
     public bool UseReadingOrderDetection { get; set; } = true;
 
     // Hard-coded sensible defaults - no need to expose these
-    public int WithinLineBinSize { get; set; } = 15;
-    public int BetweenLineBinSize { get; set; } = 15;
+    internal double WithinLineMultiplier => 4.0;
+    internal double BetweenLineMultiplier => 1.4;
+    internal int WithinLineBinSize => 10;
+    internal int BetweenLineBinSize => 5;
 
     // Header/Footer Detection Settings
-    public double HeaderMarginPercentage { get; set; } = 8.0; // top
-    public double FooterMarginPercentage { get; set; } = 8.0; // bottom
+    internal double HeaderMarginPercentage => 8.0; // top
+    internal double FooterMarginPercentage => 8.0; // bottom
 }

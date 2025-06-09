@@ -59,6 +59,8 @@ public class PdfTextExtractor : IPdfTextExtractor
         {
             var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
             {
+                WithinLineMultiplier = _settings.WithinLineMultiplier,
+                BetweenLineMultiplier = _settings.BetweenLineMultiplier,
                 WithinLineBinSize = _settings.WithinLineBinSize,
                 BetweenLineBinSize = _settings.BetweenLineBinSize
             };
