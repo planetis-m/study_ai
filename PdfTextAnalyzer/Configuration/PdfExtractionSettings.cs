@@ -6,7 +6,8 @@ public class PdfExtractionSettings
 
     public bool UseAdvancedExtraction { get; set; } = true;
     public bool ExcludeHeaderFooter { get; set; } = true;
-    public bool UseReadingOrderDetection { get; set; } = true;
+    public bool UseReadingOrderDetection { get; set; } = false;
+    public bool SkipHiddenText { get; set; } = true;
 
     // Hard-coded sensible defaults - no need to expose these
     internal double WithinLineMultiplier => 5.0;

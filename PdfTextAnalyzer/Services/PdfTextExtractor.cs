@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
@@ -51,6 +52,17 @@ public class PdfTextExtractor : IPdfTextExtractor
     private IEnumerable<TextBlock> GetTextBlocks(Page page)
     {
         var letters = page.Letters;
+        if (_settings.SkipHiddenText)
+        {
+            // Filter out letters with TextRenderingMode.Neither
+            letters = letters.Where(l => l.RenderingMode != TextRenderingMode.Neither).ToList();
+        }
+
+        if (!letters.Any())
+        {
+            return Enumerable.Empty<TextBlock>();
+        }
+
         var wordExtractor = NearestNeighbourWordExtractor.Instance;
         var words = wordExtractor.GetWords(letters);
 
