@@ -122,7 +122,7 @@ public class PdfTextExtractionDiagnosticTest
         var font = builder.AddStandard14Font(Standard14Font.Helvetica);
         var boldFont = builder.AddStandard14Font(Standard14Font.HelveticaBold);
 
-        var pageNumber = 1; // Analyze first page for visualization
+        var pageNumber = 16; // Analyze first page for visualization
         var page = document.GetPage(pageNumber);
         var pageBuilder = builder.AddPage(document, pageNumber);
 
@@ -135,8 +135,10 @@ public class PdfTextExtractionDiagnosticTest
         {
             var pageSegmenterOptions = new DocstrumBoundingBoxes.DocstrumBoundingBoxesOptions()
             {
-                WithinLineBinSize = settings.WithinLineBinSize,
-                BetweenLineBinSize = settings.BetweenLineBinSize
+                WithinLineMultiplier = 4.0,
+                BetweenLineMultiplier = 1.4,
+                WithinLineBinSize = 10,
+                BetweenLineBinSize = 5
             };
             pageSegmenter = new DocstrumBoundingBoxes(pageSegmenterOptions);
         }
@@ -224,13 +226,13 @@ public class PdfTextExtractionDiagnosticTest
     private static bool IsBlockHeaderOrFooter(TextBlock block, double pageHeight, PdfExtractionSettings settings)
     {
         // Replicate the logic from PdfTextExtractor
-        double headerBoundary = pageHeight * (1.0 - settings.HeaderMarginPercentage / 100.0);
+        double headerBoundary = pageHeight * (1.0 - 8.0 / 100.0);
         if (block.BoundingBox.Bottom > headerBoundary)
         {
             return true;
         }
 
-        double footerBoundary = pageHeight * (settings.FooterMarginPercentage / 100.0);
+        double footerBoundary = pageHeight * (8.0 / 100.0);
         if (block.BoundingBox.Top < footerBoundary)
         {
             return true;
@@ -288,10 +290,6 @@ public class PdfTextExtractionDiagnosticTest
             report.AppendLine($"  Advanced Extraction: {d.Settings.UseAdvancedExtraction}");
             report.AppendLine($"  Reading Order Detection: {d.Settings.UseReadingOrderDetection}");
             report.AppendLine($"  Header/Footer Exclusion: {d.Settings.ExcludeHeaderFooter}");
-            report.AppendLine($"  Within Line Bin Size: {d.Settings.WithinLineBinSize}");
-            report.AppendLine($"  Between Line Bin Size: {d.Settings.BetweenLineBinSize}");
-            report.AppendLine($"  Header Margin %: {d.Settings.HeaderMarginPercentage}");
-            report.AppendLine($"  Footer Margin %: {d.Settings.FooterMarginPercentage}");
             report.AppendLine();
         }
 

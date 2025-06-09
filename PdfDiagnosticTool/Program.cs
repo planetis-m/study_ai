@@ -7,7 +7,7 @@ class Program
         if (args.Length < 1)
         {
             Console.WriteLine("Usage: PdfDiagnosticTool <pdf-file-path> [output-directory]");
-            Console.WriteLine("Example: dotnet run sample1.pdf ./output");
+            Console.WriteLine("Example: dotnet run sample.pdf ./output");
             return;
         }
 

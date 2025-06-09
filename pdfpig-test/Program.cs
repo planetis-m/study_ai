@@ -8,9 +8,9 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Content;
 
 // Set your paths here
-var sourcePdfPath = "sample.pdf";  // Place your PDF file here
+var sourcePdfPath = "sample1.pdf";  // Place your PDF file here
 var outputPath = "docstrum_grid_search_output.pdf";
-var pageNumber = 15;
+var pageNumber = 40;
 
 // Define parameter variations for grid search
 var withinLineMultiplierValues = new[] { 3.0, 4.0 };
