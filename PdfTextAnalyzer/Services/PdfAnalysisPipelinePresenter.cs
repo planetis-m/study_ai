@@ -20,23 +20,20 @@ public class PdfAnalysisPipelinePresenter : IPdfAnalysisPipelinePresenter
         var settings = _pipelineCore.GetCurrentSettings();
 
         // If we reach here, the processing was successful
-        if (!string.IsNullOrEmpty(result.ExtractedText))
+        Console.WriteLine($"Extracted {result.ExtractedText.Length} characters from PDF.");
+
+        // Show a preview of extracted text
+        var preview = result.ExtractedText.Length > 500
+            ? result.ExtractedText.Substring(0, 500) + "..."
+            : result.ExtractedText;
+
+        Console.WriteLine("\n--- Raw Extracted Text Preview ---");
+        Console.WriteLine(preview);
+        Console.WriteLine("\n--- End Raw Preview ---\n");
+
+        if (settings.Preprocessing)
         {
-            Console.WriteLine($"Extracted {result.ExtractedText.Length} characters from PDF.");
-
-            // Show a preview of extracted text
-            var preview = result.ExtractedText.Length > 500
-                ? result.ExtractedText.Substring(0, 500) + "..."
-                : result.ExtractedText;
-
-            Console.WriteLine("\n--- Raw Extracted Text Preview ---");
-            Console.WriteLine(preview);
-            Console.WriteLine("\n--- End Raw Preview ---\n");
-        }
-
-        if (settings.Preprocessing && result.CleanedText != null)
-        {
-            Console.WriteLine($"Cleaned text: {result.CleanedText.Length} characters.");
+            Console.WriteLine($"Cleaned text: {result.CleanedText!.Length} characters.");
 
             // Show a preview of cleaned text
             var cleanedPreview = result.CleanedText.Length > 500
@@ -47,18 +44,18 @@ public class PdfAnalysisPipelinePresenter : IPdfAnalysisPipelinePresenter
             Console.WriteLine(cleanedPreview);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
-        else if (!settings.Preprocessing)
+        else
         {
             Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
         }
 
-        if (settings.Analysis && result.Analysis != null)
+        if (settings.Analysis)
         {
             Console.WriteLine("\n--- AI Analysis ---");
             Console.WriteLine(result.Analysis);
             Console.WriteLine("\n--- End Analysis ---");
         }
-        else if (!settings.Analysis)
+        else
         {
             Console.WriteLine("Text analysis is disabled.");
         }
