@@ -38,7 +38,7 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
             Console.WriteLine("\n--- End Raw Preview ---\n");
         }
 
-        if (result.PreprocessingEnabled && result.CleanedText != null)
+        if (result.CleanedText != null)
         {
             Console.WriteLine($"Cleaned text: {result.CleanedText.Length} characters.");
 
@@ -51,29 +51,20 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
             Console.WriteLine(cleanedPreview);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
-        else if (!result.PreprocessingEnabled)
+        else
         {
             Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
         }
 
-        if (result.AnalysisEnabled && result.Analysis != null)
+        if (result.Analysis != null)
         {
             Console.WriteLine("\n--- AI Analysis ---");
             Console.WriteLine(result.Analysis);
             Console.WriteLine("\n--- End Analysis ---");
         }
-        else if (!result.AnalysisEnabled)
+        else
         {
             Console.WriteLine("Text analysis is disabled.");
         }
-
-        // Display performance metrics
-        Console.WriteLine($"\nProcessing completed in {result.ProcessingTime.TotalSeconds:F2} seconds");
-        if (result.Metadata.TryGetValue("ExtractionTimeMs", out var extractionTime))
-            Console.WriteLine($"  - Text extraction: {extractionTime}ms");
-        if (result.Metadata.TryGetValue("CleaningTimeMs", out var cleaningTime))
-            Console.WriteLine($"  - Text cleaning: {cleaningTime}ms");
-        if (result.Metadata.TryGetValue("AnalysisTimeMs", out var analysisTime))
-            Console.WriteLine($"  - Text analysis: {analysisTime}ms");
     }
 }
