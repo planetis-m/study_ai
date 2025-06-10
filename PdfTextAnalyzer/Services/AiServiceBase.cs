@@ -47,7 +47,7 @@ public abstract class AiServiceBase
         {
             var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
 
-            if (response?.Text == null)
+            if (response == null || string.IsNullOrWhiteSpace(response.Text))
             {
                 throw new InvalidOperationException("No response received from AI service");
             }

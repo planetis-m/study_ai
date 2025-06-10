@@ -73,6 +73,7 @@ dotnet run -- path/to/your/document.pdf
 ```
 
 Example:
+
 ```bash
 dotnet run -- "research-paper.pdf"
 ```
@@ -82,6 +83,7 @@ dotnet run -- "research-paper.pdf"
 The application behavior is controlled through `appsettings.json`:
 
 ### Pipeline Settings
+
 ```json
 {
   "Pipeline": {
@@ -92,6 +94,7 @@ The application behavior is controlled through `appsettings.json`:
 ```
 
 ### PDF Extraction Settings
+
 ```json
 {
   "PdfExtraction": {
@@ -103,6 +106,7 @@ The application behavior is controlled through `appsettings.json`:
 ```
 
 ### AI Model Configuration
+
 ```json
 {
   "Preprocessing": {
