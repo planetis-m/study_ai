@@ -8,9 +8,10 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
     private readonly PreprocessingSettings _preprocessingSettings;
 
     public TextCleaningService(
-        IOptions<AzureAISettings> aiSettings,
+        IAiServiceFactory aiServiceFactory,
+        IOptions<AiSettings> aiSettings,
         IOptions<PreprocessingSettings> preprocessingSettings)
-        : base(aiSettings)
+        : base(aiServiceFactory, aiSettings)
     {
         _preprocessingSettings = preprocessingSettings.Value;
     }
@@ -25,9 +26,7 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
         return await CallAiServiceAsync(
             _preprocessingSettings.SystemMessage,
             userMessage,
-            _preprocessingSettings.Model.ModelName,
-            _preprocessingSettings.Model.Temperature,
-            _preprocessingSettings.Model.MaxTokens,
+            _preprocessingSettings.Model,
             cancellationToken
         );
     }

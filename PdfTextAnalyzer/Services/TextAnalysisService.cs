@@ -8,9 +8,10 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
     private readonly AnalysisSettings _analysisSettings;
 
     public TextAnalysisService(
-        IOptions<AzureAISettings> aiSettings,
+        IAiServiceFactory aiServiceFactory,
+        IOptions<AiSettings> aiSettings,
         IOptions<AnalysisSettings> analysisSettings)
-        : base(aiSettings)
+        : base(aiServiceFactory, aiSettings)
     {
         _analysisSettings = analysisSettings.Value;
     }
@@ -25,9 +26,7 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
         return await CallAiServiceAsync(
             _analysisSettings.SystemMessage,
             userMessage,
-            _analysisSettings.Model.ModelName,
-            _analysisSettings.Model.Temperature,
-            _analysisSettings.Model.MaxTokens,
+            _analysisSettings.Model,
             cancellationToken
         );
     }

@@ -1,5 +1,4 @@
-using Azure;
-using Azure.AI.Inference;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
 
@@ -7,59 +6,53 @@ namespace PdfTextAnalyzer.Services;
 
 public abstract class AiServiceBase
 {
-    protected readonly ChatCompletionsClient _client;
-    protected readonly AzureAISettings _aiSettings;
+    protected readonly IAiServiceFactory _aiServiceFactory;
+    protected readonly AiSettings _aiSettings;
 
-    protected AiServiceBase(IOptions<AzureAISettings> aiSettings)
+    protected AiServiceBase(IAiServiceFactory aiServiceFactory, IOptions<AiSettings> aiSettings)
     {
-        _aiSettings = aiSettings.Value;
-
-        if (string.IsNullOrWhiteSpace(_aiSettings.Endpoint))
-            throw new InvalidOperationException("AzureAI:Endpoint not configured");
-        if (string.IsNullOrWhiteSpace(_aiSettings.ApiKey))
-            throw new InvalidOperationException("AzureAI:ApiKey not configured");
-
-        _client = new ChatCompletionsClient(
-            new Uri(_aiSettings.Endpoint),
-            new AzureKeyCredential(_aiSettings.ApiKey),
-            new AzureAIInferenceClientOptions()
-        );
+        _aiServiceFactory = aiServiceFactory ?? throw new ArgumentNullException(nameof(aiServiceFactory));
+        _aiSettings = aiSettings.Value ?? throw new ArgumentNullException(nameof(aiSettings));
     }
 
     protected async Task<string> CallAiServiceAsync(
         string systemMessage,
         string userMessage,
-        string modelName,
-        float temperature,
-        int maxTokens,
+        ModelSettings modelSettings,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(systemMessage))
             throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
         if (string.IsNullOrWhiteSpace(userMessage))
             throw new ArgumentException("User message cannot be null or empty", nameof(userMessage));
+        if (modelSettings == null)
+            throw new ArgumentNullException(nameof(modelSettings));
 
-        var messages = new List<ChatRequestMessage>
+        // Create chat client for this specific model/provider combination
+        var chatClient = _aiServiceFactory.CreateChatClient(modelSettings.Provider, modelSettings.ModelName);
+
+        var messages = new List<ChatMessage>
         {
-            new ChatRequestSystemMessage(systemMessage),
-            new ChatRequestUserMessage(userMessage)
+            new(ChatRole.System, systemMessage),
+            new(ChatRole.User, userMessage)
         };
 
-        var options = new ChatCompletionsOptions(messages)
+        var options = new ChatOptions
         {
-            Temperature = temperature,
-            MaxTokens = maxTokens,
-            Model = modelName
+            Temperature = modelSettings.Temperature,
+            MaxOutputTokens = modelSettings.MaxTokens
         };
 
         try
         {
-            var response = await _client.CompleteAsync(options, cancellationToken);
-            if (!response.HasValue)
+            var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
+
+            if (response?.Text == null)
             {
-                throw new InvalidOperationException("No response received from Azure AI");
+                throw new InvalidOperationException("No response received from AI service");
             }
-            return response.Value.Content;
+
+            return response.Text;
         }
         catch (OperationCanceledException)
         {
@@ -68,7 +61,7 @@ public abstract class AiServiceBase
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to get response from Azure AI: {ex.Message}", ex);
+            throw new InvalidOperationException($"Failed to get response from AI service ({modelSettings.Provider}): {ex.Message}", ex);
         }
     }
 }

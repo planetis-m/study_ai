@@ -31,11 +31,14 @@ class Program
             .ConfigureServices((context, services) =>
             {
                 // Register configuration sections
-                services.Configure<AzureAISettings>(configuration.GetSection(AzureAISettings.SectionName));
+                services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
                 services.Configure<PipelineSettings>(configuration.GetSection(PipelineSettings.SectionName));
                 services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
                 services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
                 services.Configure<PreprocessingSettings>(configuration.GetSection(PreprocessingSettings.SectionName));
+
+                // Register AI service factory
+                services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
 
                 // Register services
                 services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();

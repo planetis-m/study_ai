@@ -36,7 +36,14 @@ The application uses .NET user secrets to store sensitive configuration.
 1. Get a GitHub personal access token with appropriate permissions
 2. Set your API key:
    ```bash
-   dotnet user-secrets set "AzureAI:ApiKey" "your-github-token"
+   # For Azure AI (GitHub Models)
+   dotnet user-secrets set "AI:AzureAI:ApiKey" "your-github-token"
+
+   # For Google Generative AI
+   dotnet user-secrets set "AI:GoogleGenerativeAI:ApiKey" "your-google-api-key"
+
+   # For OpenAI
+   dotnet user-secrets set "AI:OpenAI:ApiKey" "your-openai-api-key"
    ```
 
 The endpoint `https://models.github.ai/inference` is pre-configured for GitHub models.
@@ -136,7 +143,7 @@ study_ai/
 │       ├── TextCleaningService.cs          # AI-based text cleaning
 │       ├── ITextAnalysisService.cs         # Analysis interface
 │       └── TextAnalysisService.cs          # AI-based text analysis
-├── setup.sh                               # Setup script
+├── setup.sh                                # Setup script
 └── README.md
 ```
 

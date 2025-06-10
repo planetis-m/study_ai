@@ -12,7 +12,11 @@ cd PdfTextAnalyzer
 # Add NuGet packages
 echo "Adding NuGet packages..."
 dotnet add package PdfPig
-dotnet add package Azure.AI.Inference
+dotnet add package Microsoft.Extensions.AI
+dotnet add package Microsoft.Extensions.AI.OpenAI --prerelease
+dotnet add package Microsoft.Extensions.AI.AzureAIInference --prerelease
+dotnet add package Google_GenerativeAI.Microsoft
+
 dotnet add package Microsoft.Extensions.Configuration
 dotnet add package Microsoft.Extensions.Configuration.Json
 dotnet add package Microsoft.Extensions.Configuration.UserSecrets
