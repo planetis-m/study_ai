@@ -6,4 +6,5 @@ public class ModelSettings
     public string ModelName { get; set; } = string.Empty;
     public int MaxTokens { get; set; } = 4000;
     public float Temperature { get; set; } = 0.0f;
+    public float TopP { get; set; } = 1.0f;
 }

@@ -39,8 +39,9 @@ public abstract class AiServiceBase
 
         var options = new ChatOptions
         {
+            MaxOutputTokens = modelSettings.MaxTokens,
             Temperature = modelSettings.Temperature,
-            MaxOutputTokens = modelSettings.MaxTokens
+            TopP = modelSettings.TopP,
         };
 
         try

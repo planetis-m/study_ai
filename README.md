@@ -114,7 +114,8 @@ The application behavior is controlled through `appsettings.json`:
       "Provider": "AzureAI",
       "ModelName": "mistral-ai/mistral-medium-2505",
       "MaxTokens": 2000,
-      "Temperature": 0.1
+      "Temperature": 0.0,
+      "TopP": 1.0
     }
   },
   "Analysis": {
@@ -122,7 +123,8 @@ The application behavior is controlled through `appsettings.json`:
       "Provider": "OpenAI",
       "ModelName": "gpt-4.1",
       "MaxTokens": 4000,
-      "Temperature": 0.2
+      "Temperature": 0.0,
+      "TopP": 1.0
     }
   }
 }
