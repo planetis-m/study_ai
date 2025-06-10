@@ -2,5 +2,5 @@ namespace PdfTextAnalyzer.Services;
 
 public interface ITextAnalysisService
 {
-    Task<string> AnalyzeTextAsync(string text);
+    Task<string> AnalyzeTextAsync(string text, CancellationToken cancellationToken);
 }

@@ -5,87 +5,75 @@ namespace PdfTextAnalyzer.Services;
 
 public class PdfAnalysisPipeline : IPdfAnalysisPipeline
 {
-    private readonly IPdfTextExtractor _pdfExtractor;
-    private readonly ITextCleaningService _textCleaning;
-    private readonly ITextAnalysisService _textAnalysis;
-    private readonly PipelineSettings _pipelineSettings;
+    private readonly IPdfAnalysisPipelineEvaluatable _evaluatablePipeline;
 
-    public PdfAnalysisPipeline(
-        IPdfTextExtractor pdfExtractor,
-        ITextCleaningService textCleaning,
-        ITextAnalysisService textAnalysis,
-        IOptions<PipelineSettings> pipelineSettings)
+    public PdfAnalysisPipeline(IPdfAnalysisPipelineEvaluatable evaluatablePipeline)
     {
-        _pdfExtractor = pdfExtractor;
-        _textCleaning = textCleaning;
-        _textAnalysis = textAnalysis;
-        _pipelineSettings = pipelineSettings.Value;
+        _evaluatablePipeline = evaluatablePipeline ?? throw new ArgumentNullException(nameof(evaluatablePipeline));
     }
 
-    public async Task AnalyzePdfAsync(string pdfPath)
+    public async Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Processing PDF: {pdfPath}");
 
-        // Step 1: Extract text from PDF
-        Console.WriteLine("Extracting text from PDF...");
-        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath);
+        var result = await _evaluatablePipeline.AnalyzePdfAsync(pdfPath, cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(extractedText))
+        if (!result.IsSuccess)
         {
-            Console.WriteLine("No text could be extracted from the PDF.");
+            Console.WriteLine($"Error: {result.ErrorMessage}");
             return;
         }
 
-        Console.WriteLine($"Extracted {extractedText.Length} characters from PDF.");
-
-        // Show a preview of extracted text
-        var preview = extractedText.Length > 500
-            ? extractedText.Substring(0, 500) + "..."
-            : extractedText;
-
-        Console.WriteLine("\n--- Raw Extracted Text Preview ---");
-        Console.WriteLine(preview);
-        Console.WriteLine("\n--- End Raw Preview ---\n");
-
-        // Step 2: Clean and format the extracted text using preprocessing model
-        string cleanedText = extractedText;
-        if (_pipelineSettings.Preprocessing)
+        if (result.ExtractedText != null)
         {
-            Console.WriteLine("Cleaning and formatting text with preprocessing model...");
-            cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText);
+            Console.WriteLine($"Extracted {result.ExtractedText.Length} characters from PDF.");
 
-            Console.WriteLine($"Cleaned text: {cleanedText.Length} characters.");
+            // Show a preview of extracted text
+            var preview = result.ExtractedText.Length > 500
+                ? result.ExtractedText.Substring(0, 500) + "..."
+                : result.ExtractedText;
+
+            Console.WriteLine("\n--- Raw Extracted Text Preview ---");
+            Console.WriteLine(preview);
+            Console.WriteLine("\n--- End Raw Preview ---\n");
+        }
+
+        if (result.PreprocessingEnabled && result.CleanedText != null)
+        {
+            Console.WriteLine($"Cleaned text: {result.CleanedText.Length} characters.");
 
             // Show a preview of cleaned text
-            var cleanedPreview = cleanedText.Length > 500
-                ? cleanedText.Substring(0, 500) + "..."
-                : cleanedText;
+            var cleanedPreview = result.CleanedText.Length > 500
+                ? result.CleanedText.Substring(0, 500) + "..."
+                : result.CleanedText;
 
             Console.WriteLine("\n--- Cleaned Text Preview ---");
             Console.WriteLine(cleanedPreview);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
-        else
+        else if (!result.PreprocessingEnabled)
         {
             Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
         }
 
-        // Remove slide separators to save tokens
-        // cleanedText = cleanedText.Replace("\n---\n", "");
-
-        // Step 3: Send cleaned text to main LLM for analysis
-        if (_pipelineSettings.Analysis)
+        if (result.AnalysisEnabled && result.Analysis != null)
         {
-            Console.WriteLine("Sending text to main AI model for analysis...");
-            var analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText);
-
             Console.WriteLine("\n--- AI Analysis ---");
-            Console.WriteLine(analysis);
+            Console.WriteLine(result.Analysis);
             Console.WriteLine("\n--- End Analysis ---");
         }
-        else
+        else if (!result.AnalysisEnabled)
         {
             Console.WriteLine("Text analysis is disabled.");
         }
+
+        // Display performance metrics
+        Console.WriteLine($"\nProcessing completed in {result.ProcessingTime.TotalSeconds:F2} seconds");
+        if (result.Metadata.TryGetValue("ExtractionTimeMs", out var extractionTime))
+            Console.WriteLine($"  - Text extraction: {extractionTime}ms");
+        if (result.Metadata.TryGetValue("CleaningTimeMs", out var cleaningTime))
+            Console.WriteLine($"  - Text cleaning: {cleaningTime}ms");
+        if (result.Metadata.TryGetValue("AnalysisTimeMs", out var analysisTime))
+            Console.WriteLine($"  - Text analysis: {analysisTime}ms");
     }
 }

@@ -15,7 +15,7 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
         _preprocessingSettings = preprocessingSettings.Value;
     }
 
-    public async Task<string> CleanAndFormatTextAsync(string rawText)
+    public async Task<string> CleanAndFormatTextAsync(string rawText, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(rawText))
             throw new ArgumentException("Raw text cannot be null or empty", nameof(rawText));
@@ -27,7 +27,8 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
             userMessage,
             _preprocessingSettings.Model.ModelName,
             _preprocessingSettings.Model.Temperature,
-            _preprocessingSettings.Model.MaxTokens
+            _preprocessingSettings.Model.MaxTokens,
+            cancellationToken
         );
     }
 }

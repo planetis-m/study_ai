@@ -10,6 +10,14 @@ class Program
 {
     static async Task Main(string[] args)
     {
+        // Setup cancellation token for graceful shutdown
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+        };
+
         // Build configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -33,6 +41,9 @@ class Program
                 services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
                 services.AddScoped<ITextCleaningService, TextCleaningService>();
                 services.AddScoped<ITextAnalysisService, TextAnalysisService>();
+
+                // Register pipeline services
+                services.AddScoped<IPdfAnalysisPipelineEvaluatable, PdfAnalysisPipelineEvaluatable>();
                 services.AddScoped<IPdfAnalysisPipeline, PdfAnalysisPipeline>();
             })
             .Build();
@@ -57,7 +68,12 @@ class Program
 
         try
         {
-            await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath);
+            await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath, cts.Token);
+            Console.WriteLine("\nProcessing completed successfully!");
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("\nOperation was cancelled by user.");
         }
         catch (Exception ex)
         {

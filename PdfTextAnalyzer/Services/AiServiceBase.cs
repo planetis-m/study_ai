@@ -31,7 +31,8 @@ public abstract class AiServiceBase
         string userMessage,
         string modelName,
         float temperature,
-        int maxTokens)
+        int maxTokens,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(systemMessage))
             throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
@@ -53,7 +54,7 @@ public abstract class AiServiceBase
 
         try
         {
-            var response = await _client.CompleteAsync(options);
+            var response = await _client.CompleteAsync(options, cancellationToken);
             if (!response.HasValue)
             {
                 throw new InvalidOperationException("No response received from Azure AI");

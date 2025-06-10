@@ -15,7 +15,7 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
         _analysisSettings = analysisSettings.Value;
     }
 
-    public async Task<string> AnalyzeTextAsync(string text)
+    public async Task<string> AnalyzeTextAsync(string text, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(text))
             throw new ArgumentException("Text cannot be null or empty", nameof(text));
@@ -27,7 +27,8 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
             userMessage,
             _analysisSettings.Model.ModelName,
             _analysisSettings.Model.Temperature,
-            _analysisSettings.Model.MaxTokens
+            _analysisSettings.Model.MaxTokens,
+            cancellationToken
         );
     }
 }

@@ -19,7 +19,7 @@ public class PdfTextExtractor : IPdfTextExtractor
         _settings = settings.Value;
     }
 
-    public async Task<string> ExtractTextAsync(string pdfPath)
+    public async Task<string> ExtractTextAsync(string pdfPath, CancellationToken cancellationToken)
     {
         return await Task.Run(() =>
         {
@@ -29,6 +29,8 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             foreach (var page in document.GetPages())
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var pageTextBlocks = GetTextBlocks(page);
 
                 foreach (var block in pageTextBlocks)
@@ -45,7 +47,7 @@ public class PdfTextExtractor : IPdfTextExtractor
                 textBuilder.AppendLine("\n---\n");
             }
             return textBuilder.ToString();
-        });
+        }, cancellationToken);
     }
 
     private IEnumerable<TextBlock> GetTextBlocks(Page page)
