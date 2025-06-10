@@ -8,7 +8,7 @@ namespace PdfTextAnalyzer.Services;
 
 public interface IAiServiceFactory
 {
-    IChatClient CreateChatClient(string provider, string modelId);
+    IChatClient CreateChatClient(string provider, string model);
 }
 
 public class AiServiceFactory : IAiServiceFactory
@@ -20,21 +20,21 @@ public class AiServiceFactory : IAiServiceFactory
         _aiSettings = aiSettings.Value ?? throw new ArgumentNullException(nameof(aiSettings));
     }
 
-    public IChatClient CreateChatClient(string provider, string modelId)
+    public IChatClient CreateChatClient(string provider, string model)
     {
-        if (string.IsNullOrWhiteSpace(modelId))
-            throw new ArgumentException("Model ID cannot be null or empty", nameof(modelId));
+        if (string.IsNullOrWhiteSpace(model))
+            throw new ArgumentException("Model ID cannot be null or empty", nameof(model));
 
         return provider.ToLowerInvariant() switch
         {
-            "azureai" => CreateAzureAIChatClient(modelId),
-            "googlegenerativeai" => CreateGoogleGenerativeAIChatClient(modelId),
-            "openai" => CreateOpenAIChatClient(modelId),
+            "azureai" => CreateAzureAIChatClient(model),
+            "googleai" => CreateGoogleGenerativeAIChatClient(model),
+            "openai" => CreateOpenAIChatClient(model),
             _ => throw new InvalidOperationException($"Unsupported AI provider: {provider}")
         };
     }
 
-    private IChatClient CreateAzureAIChatClient(string modelId)
+    private IChatClient CreateAzureAIChatClient(string model)
     {
         var settings = _aiSettings.AzureAI;
 
@@ -45,21 +45,21 @@ public class AiServiceFactory : IAiServiceFactory
 
         // Create Azure AI chat client
         return new Azure.AI.Inference.ChatCompletionsClient(new Uri(settings.Endpoint),
-            new AzureKeyCredential(settings.ApiKey)).AsIChatClient(modelId);
+            new AzureKeyCredential(settings.ApiKey)).AsIChatClient(model);
     }
 
-    private IChatClient CreateGoogleGenerativeAIChatClient(string modelId)
+    private IChatClient CreateGoogleGenerativeAIChatClient(string model)
     {
-        var settings = _aiSettings.GoogleGenerativeAI;
+        var settings = _aiSettings.GoogleAI;
 
         if (string.IsNullOrWhiteSpace(settings.ApiKey))
-            throw new InvalidOperationException("AI:GoogleGenerativeAI:ApiKey not configured");
+            throw new InvalidOperationException("AI:GoogleAI:ApiKey not configured");
 
         // Create Google Generative AI chat client
-        return new GenerativeAIChatClient(settings.ApiKey, modelId);
+        return new GenerativeAIChatClient(settings.ApiKey, model);
     }
 
-    private IChatClient CreateOpenAIChatClient(string modelId)
+    private IChatClient CreateOpenAIChatClient(string model)
     {
         var settings = _aiSettings.OpenAI;
 
@@ -67,6 +67,6 @@ public class AiServiceFactory : IAiServiceFactory
             throw new InvalidOperationException("AI:OpenAI:ApiKey not configured");
 
         // Create OpenAI chat client
-        return new OpenAI.Chat.ChatClient(modelId, settings.ApiKey).AsIChatClient();
+        return new OpenAI.Chat.ChatClient(model, settings.ApiKey).AsIChatClient();
     }
 }

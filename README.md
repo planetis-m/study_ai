@@ -40,7 +40,7 @@ The application uses .NET user secrets to store sensitive configuration.
    dotnet user-secrets set "AI:AzureAI:ApiKey" "your-github-token"
 
    # For Google Generative AI
-   dotnet user-secrets set "AI:GoogleGenerativeAI:ApiKey" "your-google-api-key"
+   dotnet user-secrets set "AI:GoogleAI:ApiKey" "your-google-api-key"
 
    # For OpenAI
    dotnet user-secrets set "AI:OpenAI:ApiKey" "your-openai-api-key"
