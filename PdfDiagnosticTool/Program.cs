@@ -8,33 +8,35 @@ using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Content;
 
 // Set your paths here
-var sourcePdfPath = "sample1.pdf";  // Place your PDF file here
+var sourcePdfPath = "sample.pdf";  // Place your PDF file here
 var outputPath = "docstrum_grid_search_output.pdf";
-var pageNumber = 19;
+var pageNumber = 50;
 
 // Define parameter variations for grid search
-var withinLineMultiplierValues = new[] { 3.0, 4.0, 5.0 };
-var betweenLineMultiplierValues = new[] { 1.3, 1.4, 2.0 };
+var withinLineMultiplierValues = new[] { 5.0 };
+var betweenLineMultiplierValues = new[] { 1.3, 1.4 };
 var withinLineBoundsValues = new[]
 {
-    // new DocstrumBoundingBoxes.AngleBounds(-20, 20),
-    new DocstrumBoundingBoxes.AngleBounds(-30, 30),
-    // new DocstrumBoundingBoxes.AngleBounds(-45, 45)
+    new DocstrumBoundingBoxes.AngleBounds(-30, 30), // Default
+    new DocstrumBoundingBoxes.AngleBounds(-5, 5),
+    new DocstrumBoundingBoxes.AngleBounds(-2, 2)
 };
+
 var betweenLineBoundsValues = new[]
 {
-    // new DocstrumBoundingBoxes.AngleBounds(30, 150),
-    new DocstrumBoundingBoxes.AngleBounds(45, 135),
-    // new DocstrumBoundingBoxes.AngleBounds(60, 120)
+    new DocstrumBoundingBoxes.AngleBounds(45, 135), // Default
+    new DocstrumBoundingBoxes.AngleBounds(80, 100),
+    new DocstrumBoundingBoxes.AngleBounds(88, 92)
 };
+
 var angularDifferenceBoundsValues = new[]
 {
-    // new DocstrumBoundingBoxes.AngleBounds(-20, 20),
-    new DocstrumBoundingBoxes.AngleBounds(-30, 30),
-    // new DocstrumBoundingBoxes.AngleBounds(-45, 45)
+    new DocstrumBoundingBoxes.AngleBounds(-30, 30), // Default
+    new DocstrumBoundingBoxes.AngleBounds(-5, 5),
+    new DocstrumBoundingBoxes.AngleBounds(-1, 1)
 };
-var withinLineBinSizeValues = new[] { 10, 5, 3 };
-var betweenLineBinSizeValues = new[] { 10, 5, 3 };
+var withinLineBinSizeValues = new[] { 5, 3 };
+var betweenLineBinSizeValues = new[] { 5, 3 };
 
 try
 {
