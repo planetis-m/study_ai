@@ -60,12 +60,6 @@ class Program
 
         var pdfPath = args[0];
 
-        if (!File.Exists(pdfPath))
-        {
-            Console.WriteLine($"Error: File '{pdfPath}' not found.");
-            return;
-        }
-
         try
         {
             await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath, cts.Token);

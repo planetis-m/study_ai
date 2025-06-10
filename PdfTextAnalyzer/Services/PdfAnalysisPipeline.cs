@@ -12,7 +12,7 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
         _evaluatablePipeline = evaluatablePipeline ?? throw new ArgumentNullException(nameof(evaluatablePipeline));
     }
 
-    public async Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken = default)
+    public async Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Processing PDF: {pdfPath}");
 
