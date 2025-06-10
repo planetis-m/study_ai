@@ -53,16 +53,12 @@ public abstract class AiServiceBase
                 throw new InvalidOperationException($"AI service ({modelSettings.Provider}) returned null response");
             }
 
-            if (string.IsNullOrWhiteSpace(response.Text))
-            {
-                throw new InvalidOperationException($"AI service ({modelSettings.Provider}) returned empty response");
-            }
-
             return response.Text;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is InvalidOperationException
+            || ex is OperationCanceledException)
         {
-            // Re-throw cancellation exceptions as-is
+            // Re-throw exceptions as-is
             throw;
         }
         catch (Exception ex)
