@@ -43,13 +43,13 @@ class Program
                 services.AddScoped<ITextAnalysisService, TextAnalysisService>();
 
                 // Register pipeline services
-                services.AddScoped<IPdfAnalysisPipelineEvaluatable, PdfAnalysisPipelineEvaluatable>();
-                services.AddScoped<IPdfAnalysisPipeline, PdfAnalysisPipeline>();
+                services.AddScoped<IPdfAnalysisPipelineCore, PdfAnalysisPipelineCore>();
+                services.AddScoped<IPdfAnalysisPipelinePresenter, PdfAnalysisPipelinePresenter>();
             })
             .Build();
 
         // Get the service and run
-        var pdfAnalysisPipeline = host.Services.GetRequiredService<IPdfAnalysisPipeline>();
+        var pdfAnalysisPipeline = host.Services.GetRequiredService<IPdfAnalysisPipelinePresenter>();
 
         if (args.Length == 0)
         {

@@ -5,14 +5,14 @@ using PdfTextAnalyzer.Models;
 
 namespace PdfTextAnalyzer.Services;
 
-public class PdfAnalysisPipelineEvaluatable : IPdfAnalysisPipelineEvaluatable
+public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
 {
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly ITextCleaningService _textCleaning;
     private readonly ITextAnalysisService _textAnalysis;
     private readonly PipelineSettings _pipelineSettings;
 
-    public PdfAnalysisPipelineEvaluatable(
+    public PdfAnalysisPipelineCore(
         IPdfTextExtractor pdfExtractor,
         ITextCleaningService textCleaning,
         ITextAnalysisService textAnalysis,
@@ -23,6 +23,8 @@ public class PdfAnalysisPipelineEvaluatable : IPdfAnalysisPipelineEvaluatable
         _textAnalysis = textAnalysis ?? throw new ArgumentNullException(nameof(textAnalysis));
         _pipelineSettings = pipelineSettings.Value ?? throw new ArgumentNullException(nameof(pipelineSettings));
     }
+
+    public PipelineSettings GetCurrentSettings() => _pipelineSettings;
 
     public async Task<PipelineResult> AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken)
     {

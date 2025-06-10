@@ -3,24 +3,21 @@ using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public class PdfAnalysisPipeline : IPdfAnalysisPipeline
+public class PdfAnalysisPipelinePresenter : IPdfAnalysisPipelinePresenter
 {
-    private readonly IPdfAnalysisPipelineEvaluatable _evaluatablePipeline;
-    private readonly PipelineSettings _pipelineSettings;
+    private readonly IPdfAnalysisPipelineCore _pipelineCore;
 
-    public PdfAnalysisPipeline(
-        IPdfAnalysisPipelineEvaluatable evaluatablePipeline,
-        IOptions<PipelineSettings> pipelineSettings)
+    public PdfAnalysisPipelinePresenter(IPdfAnalysisPipelineCore pipelineCore)
     {
-        _evaluatablePipeline = evaluatablePipeline ?? throw new ArgumentNullException(nameof(evaluatablePipeline));
-        _pipelineSettings = pipelineSettings.Value ?? throw new ArgumentNullException(nameof(pipelineSettings));
+        _pipelineCore = pipelineCore ?? throw new ArgumentNullException(nameof(pipelineCore));
     }
 
     public async Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Processing PDF: {pdfPath}");
 
-        var result = await _evaluatablePipeline.AnalyzePdfAsync(pdfPath, cancellationToken);
+        var result = await _pipelineCore.AnalyzePdfAsync(pdfPath, cancellationToken);
+        var settings = _pipelineCore.GetCurrentSettings();
 
         if (!result.IsSuccess)
         {
@@ -42,7 +39,7 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
             Console.WriteLine("\n--- End Raw Preview ---\n");
         }
 
-        if (_pipelineSettings.Preprocessing && result.CleanedText != null)
+        if (settings.Preprocessing && result.CleanedText != null)
         {
             Console.WriteLine($"Cleaned text: {result.CleanedText.Length} characters.");
 
@@ -55,18 +52,18 @@ public class PdfAnalysisPipeline : IPdfAnalysisPipeline
             Console.WriteLine(cleanedPreview);
             Console.WriteLine("\n--- End Cleaned Preview ---\n");
         }
-        else if (!_pipelineSettings.Preprocessing)
+        else if (!settings.Preprocessing)
         {
             Console.WriteLine("Text preprocessing is disabled. Using raw extracted text.");
         }
 
-        if (_pipelineSettings.Analysis && result.Analysis != null)
+        if (settings.Analysis && result.Analysis != null)
         {
             Console.WriteLine("\n--- AI Analysis ---");
             Console.WriteLine(result.Analysis);
             Console.WriteLine("\n--- End Analysis ---");
         }
-        else if (!_pipelineSettings.Analysis)
+        else if (!settings.Analysis)
         {
             Console.WriteLine("Text analysis is disabled.");
         }

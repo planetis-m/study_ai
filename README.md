@@ -128,8 +128,8 @@ study_ai/
 │   │   ├── PdfExtractionSettings.cs
 │   │   └── ...
 │   └── Services/                           # Service implementations
-│       ├── IPdfAnalysisPipeline.cs         # Main pipeline interface
-│       ├── PdfAnalysisPipeline.cs          # Pipeline orchestration
+│       ├── IPdfAnalysisPipelineCore.cs     # Main pipeline interface
+│       ├── PdfAnalysisPipelineCore.cs      # Pipeline orchestration
 │       ├── IPdfTextExtractor.cs            # PDF extraction interface
 │       ├── PdfTextExtractor.cs             # PDF extraction implementation
 │       ├── ITextCleaningService.cs         # Text cleaning interface

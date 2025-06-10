@@ -1,6 +1,6 @@
 namespace PdfTextAnalyzer.Services;
 
-public interface IPdfAnalysisPipeline
+public interface IPdfAnalysisPipelinePresenter
 {
     Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken);
 }
