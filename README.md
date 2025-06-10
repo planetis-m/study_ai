@@ -53,8 +53,8 @@ The endpoint `https://models.github.ai/inference` is pre-configured for GitHub m
 1. Create an Azure AI resource and get your endpoint and API key
 2. Configure using user secrets:
    ```bash
-   dotnet user-secrets set "AzureAI:Endpoint" "your-azure-endpoint"
-   dotnet user-secrets set "AzureAI:ApiKey" "your-azure-api-key"
+   dotnet user-secrets set "AI:AzureAI:Endpoint" "your-azure-endpoint"
+   dotnet user-secrets set "AI:AzureAI:ApiKey" "your-azure-api-key"
    ```
 
 ### 3. Configure Models (Optional)
@@ -96,7 +96,8 @@ The application behavior is controlled through `appsettings.json`:
 {
   "PdfExtraction": {
     "UseAdvancedExtraction": true,
-    "ExcludeHeaderFooter": true
+    "ExcludeHeaderFooter": true,
+    "UseReadingOrderDetection": false,
   }
 }
 ```
@@ -106,6 +107,7 @@ The application behavior is controlled through `appsettings.json`:
 {
   "Preprocessing": {
     "Model": {
+      "Provider": "AzureAI",
       "ModelName": "mistral-ai/mistral-medium-2505",
       "MaxTokens": 2000,
       "Temperature": 0.1
@@ -113,7 +115,8 @@ The application behavior is controlled through `appsettings.json`:
   },
   "Analysis": {
     "Model": {
-      "ModelName": "openai/gpt-4.1",
+      "Provider": "OpenAI",
+      "ModelName": "gpt-4.1",
       "MaxTokens": 4000,
       "Temperature": 0.2
     }
@@ -126,25 +129,36 @@ The application behavior is controlled through `appsettings.json`:
 ```
 study_ai/
 ├── PdfTextAnalyzer/
-│   ├── Program.cs                          # Application entry point
-│   ├── appsettings.json                    # Configuration file
-│   ├── PdfTextAnalyzer.csproj              # Project file
-│   ├── Configuration/                      # Configuration models
-│   │   ├── AzureAISettings.cs
-│   │   ├── PipelineSettings.cs
+│   ├── Program.cs                     # Application entry point
+│   ├── appsettings.json               # Configuration file
+│   ├── PdfTextAnalyzer.csproj         # Project file
+│   ├── Configuration/                 # Configuration models
+│   │   ├── AiSettings.cs
+│   │   ├── AnalysisSettings.cs
+│   │   ├── AzureAiSettings.cs
+│   │   ├── GoogleAiSettings.cs
+│   │   ├── ModelSettings.cs
+│   │   ├── OpenAiSettings.cs
 │   │   ├── PdfExtractionSettings.cs
-│   │   └── ...
-│   └── Services/                           # Service implementations
-│       ├── IPdfAnalysisPipelineCore.cs     # Main pipeline interface
-│       ├── PdfAnalysisPipelineCore.cs      # Pipeline orchestration
-│       ├── IPdfTextExtractor.cs            # PDF extraction interface
-│       ├── PdfTextExtractor.cs             # PDF extraction implementation
-│       ├── ITextCleaningService.cs         # Text cleaning interface
-│       ├── TextCleaningService.cs          # AI-based text cleaning
-│       ├── ITextAnalysisService.cs         # Analysis interface
-│       └── TextAnalysisService.cs          # AI-based text analysis
-├── setup.sh                                # Setup script
-└── README.md
+│   │   ├── PipelineSettings.cs
+│   │   └── PreprocessorSettings.cs
+│   ├── Models/                        # Data/result models
+│   │   └── PipelineResults.cs
+│   ├── Services/                      # Service implementations
+│   │   ├── AiServiceBase.cs
+│   │   ├── AiServiceFactory.cs
+│   │   ├── IPdfAnalysisPipelineCore.cs
+│   │   ├── IPdfAnalysisPipelinePresenter.cs
+│   │   ├── IPdfTextExtractor.cs
+│   │   ├── ITextAnalysisAiService.cs
+│   │   ├── ITextCleaningService.cs
+│   │   ├── PdfAnalysisPipelineCore.cs
+│   │   ├── PdfAnalysisPipelinePresenter.cs
+│   │   ├── PdfTextExtractor.cs
+│   │   ├── TextAnalysisService.cs
+│   │   └── TextCleaningService.cs
+│   ├── setup.sh                       # Setup script
+│   └── README.md
 ```
 
 ## Error Handling
