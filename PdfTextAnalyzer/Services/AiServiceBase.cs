@@ -50,7 +50,7 @@ public abstract class AiServiceBase
 
             if (response == null || string.IsNullOrWhiteSpace(response.Text))
             {
-                throw new InvalidOperationException("No response received from AI service");
+                throw new InvalidOperationException("AI service returned empty response");
             }
 
             return response.Text;
