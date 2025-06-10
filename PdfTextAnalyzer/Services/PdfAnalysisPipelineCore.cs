@@ -44,7 +44,7 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
         }
 
         // Step 2: Clean and format the extracted text using preprocessing model
-        string? cleanedText = extractedText;
+        string? cleanedText = null;
         if (_pipelineSettings.Preprocessing)
         {
             cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText, cancellationToken);
@@ -59,7 +59,7 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
         string? analysis = null;
         if (_pipelineSettings.Analysis && !string.IsNullOrWhiteSpace(cleanedText))
         {
-            analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText, cancellationToken);
+            analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText ?? extractedText, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(analysis))
             {
