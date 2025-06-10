@@ -1,5 +1,5 @@
-using PdfTextAnalyzer.Models;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Models;
 
 namespace PdfTextAnalyzer.Services;
 

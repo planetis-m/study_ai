@@ -30,70 +30,52 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
     {
         var stopwatch = Stopwatch.StartNew();
 
-        try
+        if (string.IsNullOrWhiteSpace(pdfPath))
+            throw new ArgumentException("PDF path cannot be null or empty", nameof(pdfPath));
+
+        if (!File.Exists(pdfPath))
+            throw new FileNotFoundException($"PDF file not found: {pdfPath}");
+
+        // Step 1: Extract text from PDF
+        var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath, cancellationToken);
+        if (string.IsNullOrWhiteSpace(extractedText))
         {
-            if (string.IsNullOrWhiteSpace(pdfPath))
-                throw new ArgumentException("PDF path cannot be null or empty", nameof(pdfPath));
-
-            if (!File.Exists(pdfPath))
-                throw new FileNotFoundException($"PDF file not found: {pdfPath}");
-
-            // Step 1: Extract text from PDF
-            var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath, cancellationToken);
-            if (string.IsNullOrWhiteSpace(extractedText))
-            {
-                return new PipelineResult
-                {
-                    PdfPath = pdfPath,
-                    ExtractedText = extractedText,
-                    ProcessingTime = stopwatch.Elapsed,
-                    IsSuccess = false,
-                    ErrorMessage = "No text could be extracted from the PDF."
-                };
-            }
-
-            // Step 2: Clean and format the extracted text using preprocessing model
-            string? cleanedText = extractedText;
-            if (_pipelineSettings.Preprocessing)
-            {
-                cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText, cancellationToken);
-            }
-
-            // Step 3: Send cleaned text to main LLM for analysis
-            string? analysis = null;
-            if (_pipelineSettings.Analysis && !string.IsNullOrWhiteSpace(cleanedText))
-            {
-                analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText, cancellationToken);
-            }
-
-            stopwatch.Stop();
-
-            return new PipelineResult
-            {
-                PdfPath = pdfPath,
-                ExtractedText = extractedText,
-                CleanedText = cleanedText,
-                Analysis = analysis,
-                ProcessingTime = stopwatch.Elapsed,
-                IsSuccess = true
-            };
+            throw new InvalidOperationException("No text could be extracted from the PDF. The file may be empty, corrupted, or contain only images.");
         }
-        catch (OperationCanceledException)
+
+        // Step 2: Clean and format the extracted text using preprocessing model
+        string? cleanedText = extractedText;
+        if (_pipelineSettings.Preprocessing)
         {
-            // Re-throw cancellation exceptions
-            throw;
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
+            cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText, cancellationToken);
 
-            return new PipelineResult
+            if (string.IsNullOrWhiteSpace(cleanedText))
             {
-                PdfPath = pdfPath,
-                ProcessingTime = stopwatch.Elapsed,
-                IsSuccess = false,
-                ErrorMessage = ex.Message
-            };
+                throw new InvalidOperationException("Text cleaning service returned empty result.");
+            }
         }
+
+        // Step 3: Send cleaned text to main LLM for analysis
+        string? analysis = null;
+        if (_pipelineSettings.Analysis && !string.IsNullOrWhiteSpace(cleanedText))
+        {
+            analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText, cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(analysis))
+            {
+                throw new InvalidOperationException("Text analysis service returned empty result.");
+            }
+        }
+
+        stopwatch.Stop();
+
+        return new PipelineResult
+        {
+            PdfPath = pdfPath,
+            ExtractedText = extractedText,
+            CleanedText = cleanedText,
+            Analysis = analysis,
+            ProcessingTime = stopwatch.Elapsed
+        };
     }
 }

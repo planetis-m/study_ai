@@ -48,20 +48,26 @@ public abstract class AiServiceBase
         {
             var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
 
-            if (response == null || string.IsNullOrWhiteSpace(response.Text))
+            if (response == null)
             {
-                throw new InvalidOperationException("AI service returned empty response");
+                throw new InvalidOperationException($"AI service ({modelSettings.Provider}) returned null response");
+            }
+
+            if (string.IsNullOrWhiteSpace(response.Text))
+            {
+                throw new InvalidOperationException($"AI service ({modelSettings.Provider}) returned empty response");
             }
 
             return response.Text;
         }
         catch (OperationCanceledException)
         {
-            // Re-throw cancellation exceptions
+            // Re-throw cancellation exceptions as-is
             throw;
         }
         catch (Exception ex)
         {
+            // Wrap other exceptions with more context, but keep the original exception as inner exception
             throw new InvalidOperationException($"Failed to get response from AI service ({modelSettings.Provider}): {ex.Message}", ex);
         }
     }

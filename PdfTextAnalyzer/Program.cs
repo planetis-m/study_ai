@@ -71,10 +71,27 @@ class Program
         catch (OperationCanceledException)
         {
             Console.WriteLine("\nOperation was cancelled by user.");
+            Environment.ExitCode = 1;
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
+            Environment.ExitCode = 1;
         }
     }
 }

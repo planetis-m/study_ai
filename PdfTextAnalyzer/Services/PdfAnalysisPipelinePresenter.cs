@@ -19,13 +19,8 @@ public class PdfAnalysisPipelinePresenter : IPdfAnalysisPipelinePresenter
         var result = await _pipelineCore.AnalyzePdfAsync(pdfPath, cancellationToken);
         var settings = _pipelineCore.GetCurrentSettings();
 
-        if (!result.IsSuccess)
-        {
-            Console.WriteLine($"Error: {result.ErrorMessage}");
-            return;
-        }
-
-        if (result.ExtractedText != null)
+        // If we reach here, the processing was successful
+        if (!string.IsNullOrEmpty(result.ExtractedText))
         {
             Console.WriteLine($"Extracted {result.ExtractedText.Length} characters from PDF.");
 
