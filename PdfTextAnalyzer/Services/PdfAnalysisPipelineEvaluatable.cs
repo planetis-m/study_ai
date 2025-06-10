@@ -99,6 +99,11 @@ public class PdfAnalysisPipelineEvaluatable : IPdfAnalysisPipelineEvaluatable
                 IsSuccess = true
             };
         }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions
+            throw;
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();

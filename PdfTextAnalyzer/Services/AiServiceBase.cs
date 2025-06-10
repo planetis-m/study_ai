@@ -61,6 +61,11 @@ public abstract class AiServiceBase
             }
             return response.Value.Content;
         }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions
+            throw;
+        }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to get response from Azure AI: {ex.Message}", ex);
