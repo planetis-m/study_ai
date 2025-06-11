@@ -48,7 +48,7 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
 
         // Step 3: Send cleaned text to main LLM for analysis
         string? analysis = null;
-        if (_pipelineSettings.Analysis && !string.IsNullOrWhiteSpace(cleanedText))
+        if (_pipelineSettings.Analysis)
         {
             analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText ?? extractedText, cancellationToken);
         }
