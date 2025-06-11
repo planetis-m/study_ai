@@ -30,7 +30,7 @@ public class AiServiceFactory : IAiServiceFactory
             "azureai" => CreateAzureAIChatClient(model),
             "googleai" => CreateGoogleGenerativeAIChatClient(model),
             "openai" => CreateOpenAIChatClient(model),
-            _ => throw new InvalidOperationException($"Unsupported AI provider: {provider}")
+            _ => throw new NotSupportedException($"Unsupported AI provider: {provider}")
         };
     }
 
