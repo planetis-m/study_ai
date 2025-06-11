@@ -6,9 +6,15 @@ using PdfTextAnalyzer.Services;
 
 namespace PdfTextAnalyzer;
 
+internal static class ExitCode
+{
+    public const int Success = 0;
+    public const int Failure = 1;
+}
+
 class Program
 {
-    static async Task Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
         // Setup cancellation token for graceful shutdown
         using var cts = new CancellationTokenSource();
@@ -58,7 +64,7 @@ class Program
         {
             Console.WriteLine("Usage: PdfTextAnalyzer <path-to-pdf-file>");
             Console.WriteLine("Example: PdfTextAnalyzer sample.pdf");
-            return;
+            return ExitCode.Failure;
         }
 
         var pdfPath = args[0];
@@ -67,16 +73,17 @@ class Program
         {
             await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath, cts.Token);
             Console.WriteLine("\nProcessing completed successfully!");
+            return ExitCode.Success;
         }
         catch (OperationCanceledException)
         {
             Console.WriteLine("\nOperation was cancelled by user.");
-            Environment.ExitCode = 1;
+            return ExitCode.Failure;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-            Environment.ExitCode = 1;
+            Console.WriteLine($"Error: {ex.Message}");
+            return ExitCode.Failure;
         }
     }
 }
