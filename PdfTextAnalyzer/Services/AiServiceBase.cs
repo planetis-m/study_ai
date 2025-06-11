@@ -48,7 +48,7 @@ public abstract class AiServiceBase
 
         var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
 
-        if (response == null || string.IsNullOrWhiteSpace(response.Text))
+        if (string.IsNullOrWhiteSpace(response.Text))
         {
             throw new InvalidOperationException($"({modelSettings.Provider}) returned empty response");
         }
