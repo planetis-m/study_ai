@@ -47,12 +47,13 @@ public abstract class AiServiceBase
         };
 
         var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
+        var message = response.Text;
 
-        if (string.IsNullOrWhiteSpace(response.Text))
+        if (string.IsNullOrWhiteSpace(message))
         {
             throw new InvalidOperationException($"({modelSettings.Provider}) returned empty response");
         }
 
-        return response.Text;
+        return message;
     }
 }
