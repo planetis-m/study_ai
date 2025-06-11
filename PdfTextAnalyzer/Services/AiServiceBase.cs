@@ -23,8 +23,10 @@ public abstract class AiServiceBase
     {
         if (string.IsNullOrWhiteSpace(systemMessage))
             throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
+
         if (string.IsNullOrWhiteSpace(userMessage))
             throw new ArgumentException("User message cannot be null or empty", nameof(userMessage));
+
         if (modelSettings == null)
             throw new ArgumentNullException(nameof(modelSettings));
 

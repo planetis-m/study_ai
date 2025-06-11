@@ -40,6 +40,7 @@ public class AiServiceFactory : IAiServiceFactory
 
         if (string.IsNullOrWhiteSpace(settings.Endpoint))
             throw new InvalidOperationException("AI:AzureAI:Endpoint not configured");
+
         if (string.IsNullOrWhiteSpace(settings.ApiKey))
             throw new InvalidOperationException("AI:AzureAI:ApiKey not configured");
 
