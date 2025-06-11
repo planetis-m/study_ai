@@ -23,11 +23,24 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
 
         var userMessage = $"{_analysisSettings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
 
-        return await CallAiServiceAsync(
-            _analysisSettings.SystemMessage,
-            userMessage,
-            _analysisSettings.Model,
-            cancellationToken
-        );
+        try
+        {
+            return await CallAiServiceAsync(
+                _analysisSettings.SystemMessage,
+                userMessage,
+                _analysisSettings.Model,
+                cancellationToken
+            );
+        }
+        catch (OperationCanceledException)
+        {
+            // Re-throw exceptions as-is
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Wrap other exceptions with more context, but keep the original exception as inner exception
+            throw new InvalidOperationException($"Failed to analyze text: {ex.Message}", ex);
+        }
     }
 }

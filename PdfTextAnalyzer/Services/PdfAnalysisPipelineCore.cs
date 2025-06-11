@@ -38,21 +38,12 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
 
         // Step 1: Extract text from PDF
         var extractedText = await _pdfExtractor.ExtractTextAsync(pdfPath, cancellationToken);
-        if (string.IsNullOrWhiteSpace(extractedText))
-        {
-            throw new InvalidOperationException("No text could be extracted from the PDF. The file may be empty, corrupted, or contain only images.");
-        }
 
         // Step 2: Clean and format the extracted text using preprocessing model
         string? cleanedText = null;
         if (_pipelineSettings.Preprocessing)
         {
             cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText, cancellationToken);
-
-            if (string.IsNullOrWhiteSpace(cleanedText))
-            {
-                throw new InvalidOperationException("Text cleaning service returned empty result.");
-            }
         }
 
         // Step 3: Send cleaned text to main LLM for analysis
@@ -60,11 +51,6 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
         if (_pipelineSettings.Analysis && !string.IsNullOrWhiteSpace(cleanedText))
         {
             analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText ?? extractedText, cancellationToken);
-
-            if (string.IsNullOrWhiteSpace(analysis))
-            {
-                throw new InvalidOperationException("Text analysis service returned empty result.");
-            }
         }
 
         stopwatch.Stop();

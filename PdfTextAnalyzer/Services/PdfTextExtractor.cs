@@ -21,7 +21,7 @@ public class PdfTextExtractor : IPdfTextExtractor
 
     public async Task<string> ExtractTextAsync(string pdfPath, CancellationToken cancellationToken)
     {
-        return await Task.Run(() =>
+        var extractedText = await Task.Run(() =>
         {
             var textBuilder = new StringBuilder();
 
@@ -48,6 +48,13 @@ public class PdfTextExtractor : IPdfTextExtractor
             }
             return textBuilder.ToString();
         }, cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(extractedText))
+        {
+            throw new InvalidOperationException("No text could be extracted from the PDF. The file may be empty, corrupted, or contain only images.");
+        }
+
+        return extractedText;
     }
 
     private IEnumerable<TextBlock> GetTextBlocks(Page page)
