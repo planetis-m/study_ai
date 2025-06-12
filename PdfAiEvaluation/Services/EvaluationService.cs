@@ -168,19 +168,19 @@ public class EvaluationService : IEvaluationService
         };
     }
 
-    private List<string> GetTagsForTestCase(EvaluationTestData testCase)
+    public static List<string> GetTagsForTestCase(EvaluationTestData testCase)
     {
         var tags = new List<string> { "prompt-quality", "evaluation" };
 
-        // Add metadata as tags
-        if (testCase.Metadata.TryGetValue("topic", out var topic) && topic is string topicStr)
+        if (testCase.Tags != null)
         {
-            tags.Add($"topic:{topicStr}");
-        }
-
-        if (testCase.Metadata.TryGetValue("complexity", out var complexity) && complexity is string complexityStr)
-        {
-            tags.Add($"complexity:{complexityStr}");
+            foreach (var tag in testCase.Tags)
+            {
+                if (!string.IsNullOrWhiteSpace(tag))
+                {
+                    tags.Add(tag);
+                }
+            }
         }
 
         return tags;

@@ -60,7 +60,7 @@ public class AiServiceFactory : IAiServiceFactory
     {
         var settings = _settings.OpenAI;
 
-        Guard.ConfigurationNotNullOrWhiteSpace(settings.ApiKey, "AI:GoogleAI:ApiKey");
+        Guard.ConfigurationNotNullOrWhiteSpace(settings.ApiKey, "AI:OpenAI:ApiKey");
 
         // Create OpenAI chat client
         return new OpenAI.Chat.ChatClient(model, settings.ApiKey).AsIChatClient();
