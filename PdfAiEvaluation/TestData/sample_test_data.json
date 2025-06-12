@@ -1,0 +1,101 @@
+{
+  "Name": "Prompt Quality Evaluation Test Set",
+  "Description": "Sample test cases for evaluating prompt quality using various evaluators",
+  "TestCases": [
+    {
+      "TestId": "completeness-test-1",
+      "Description": "Testing completeness of response to a technical question",
+      "Messages": [
+        {
+          "Role": "system",
+          "Text": "You are a helpful technical assistant. Provide comprehensive and detailed answers to programming questions."
+        },
+        {
+          "Role": "user",
+          "Text": "How do I implement dependency injection in .NET Core?"
+        }
+      ],
+      "GroundTruth": "A complete answer should cover: 1) Built-in DI container, 2) Service registration (AddTransient, AddScoped, AddSingleton), 3) Constructor injection, 4) Service location pattern, 5) Configuration in Program.cs/Startup.cs, 6) Best practices and common patterns.",
+      "Metadata": {
+        "topic": "dependency-injection",
+        "complexity": "intermediate"
+      }
+    },
+    {
+      "TestId": "equivalence-test-1",
+      "Description": "Testing equivalence of response with ground truth",
+      "Messages": [
+        {
+          "Role": "system",
+          "Text": "You are a math tutor. Provide clear and accurate mathematical explanations."
+        },
+        {
+          "Role": "user",
+          "Text": "What is the derivative of x^2?"
+        }
+      ],
+      "GroundTruth": "The derivative of x^2 is 2x. This follows from the power rule: d/dx(x^n) = n*x^(n-1).",
+      "Metadata": {
+        "topic": "calculus",
+        "complexity": "basic"
+      }
+    },
+    {
+      "TestId": "groundedness-test-1",
+      "Description": "Testing groundedness of response based on provided context",
+      "Messages": [
+        {
+          "Role": "system",
+          "Text": "Answer questions based only on the provided context. Do not use external knowledge."
+        },
+        {
+          "Role": "user",
+          "Text": "What are the main features of the new product mentioned in the document?"
+        }
+      ],
+      "GroundingContext": "Product X is a revolutionary software tool that includes: automated testing capabilities, real-time collaboration features, and advanced analytics dashboard. It supports integration with over 50 third-party services and provides enterprise-grade security with SOC 2 compliance.",
+      "Metadata": {
+        "topic": "product-analysis",
+        "complexity": "intermediate"
+      }
+    },
+    {
+      "TestId": "completeness-test-2",
+      "Description": "Testing completeness for a recipe request",
+      "Messages": [
+        {
+          "Role": "system",
+          "Text": "You are a helpful cooking assistant. Provide complete recipes with all necessary details."
+        },
+        {
+          "Role": "user",
+          "Text": "Give me a recipe for chocolate chip cookies."
+        }
+      ],
+      "GroundTruth": "A complete recipe should include: ingredients list with measurements, step-by-step instructions, baking temperature and time, yield/serving size, prep time, and any helpful tips or variations.",
+      "Metadata": {
+        "topic": "cooking",
+        "complexity": "basic"
+      }
+    },
+    {
+      "TestId": "equivalence-test-2",
+      "Description": "Testing equivalence for historical fact",
+      "Messages": [
+        {
+          "Role": "system",
+          "Text": "You are a history teacher. Provide accurate historical information."
+        },
+        {
+          "Role": "user",
+          "Text": "When did World War II end?"
+        }
+      ],
+      "GroundTruth": "World War II ended in 1945. The war in Europe ended on May 8, 1945 (VE Day), and the war in the Pacific ended on September 2, 1945 (VJ Day) after Japan surrendered.",
+      "Metadata": {
+        "topic": "history",
+        "complexity": "basic"
+      }
+    }
+  ]
+}
