@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PdfAiEvaluator.Configuration;
 using PdfAiEvaluator.Services;
 
@@ -42,22 +43,22 @@ class Program
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         var evaluationService = host.Services.GetRequiredService<IEvaluationService>();
+        var settings = host.Services.GetRequiredService<IOptions<EvaluationSettings>>().Value;
 
         try
         {
             logger.LogInformation("Starting Prompt Quality Evaluation Application");
 
             // Ensure test data exists
-            var testDataPath = Path.Combine("TestData", "sample_test_data.json");
-            if (!File.Exists(testDataPath))
+            if (!File.Exists(settings.TestDataPath))
             {
-                logger.LogError("Test data file not found: {TestDataPath}", testDataPath);
-                logger.LogError("Please ensure the test data file exists before running evaluation.");
+                logger.LogError($"Test data file not found: {settings.TestDataPath}" +
+                    "Please ensure the test data file exists before running evaluation.");
                 return;
             }
 
             // Run evaluation
-            await evaluationService.RunEvaluationAsync(testDataPath);
+            await evaluationService.RunEvaluationAsync(settings.TestDataPath);
 
             // Provide report generation instructions
             await evaluationService.GenerateReportAsync();

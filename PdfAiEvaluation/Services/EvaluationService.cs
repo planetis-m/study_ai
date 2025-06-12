@@ -20,7 +20,6 @@ public class EvaluationService : IEvaluationService
     private readonly EvaluationSettings _settings;
     private readonly ILogger<EvaluationService> _logger;
     private ReportingConfiguration? _reportingConfiguration;
-    private const int MaxConcurrentRequests = 2;
 
     public EvaluationService(
         IAiServiceFactory aiServiceFactory,
@@ -59,12 +58,12 @@ public class EvaluationService : IEvaluationService
             enableResponseCaching: _settings.EnableResponseCaching,
             timeToLiveForCacheEntries: TimeSpan.FromHours(_settings.TimeToLiveHours),
             executionName: _settings.ExecutionName,
-            tags: ["prompt-quality", "evaluation", DateTime.UtcNow.ToString("yyyy-MM-dd")]
+            tags: ["prompt-quality", "evaluation", DateTime.UtcNow.ToString("dd-MM-yyyy")]
         );
 
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
-        var semaphore = new SemaphoreSlim(MaxConcurrentRequests);
+        var semaphore = new SemaphoreSlim(_settings.MaxConcurrentRequests);
 
         foreach (var testCase in testSet.TestCases)
         {
@@ -124,8 +123,7 @@ public class EvaluationService : IEvaluationService
 
     public async Task GenerateReportAsync()
     {
-    _logger.LogInformation(
-    var storagePath = Path.GetFullPath(_evaluationSettings.StorageRootPath);
+    var storagePath = Path.GetFullPath(_settings.StorageRootPath);
     var instructions = $"""
     Report generation instructions:
       1. Install the AI evaluation console tool:
@@ -134,7 +132,6 @@ public class EvaluationService : IEvaluationService
 
       2. Generate HTML report:
          dotnet aieval report --path "{storagePath}" --output report.html --open
-
     """;
 
         _logger.LogInformation(instructions);

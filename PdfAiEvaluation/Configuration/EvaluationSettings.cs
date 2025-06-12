@@ -4,10 +4,12 @@ public class EvaluationSettings
 {
     public const string SectionName = "Evaluation";
 
-    public string StorageRootPath { get; set; } = "./evaluation-cache";
+    public string TestDataPath { get; set; } = string.Empty;
+    public string StorageRootPath { get; set; } = "./EvaluationCache";
     public string ExecutionName { get; set; } = "PromptQualityEvaluation";
     public bool EnableResponseCaching { get; set; } = true;
     public int TimeToLiveHours { get; set; } = 6;
+    public int MaxConcurrentRequests { get; set; } = 1;
     public string EvaluatorProvider { get; set; } = "AzureAI";
     public string EvaluatorModel { get; set; } = string.Empty;
     public string TargetProvider { get; set; } = "AzureAI";
