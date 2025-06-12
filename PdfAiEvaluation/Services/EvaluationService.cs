@@ -9,6 +9,7 @@ using PdfAiEvaluator.Converters;
 using PdfAiEvaluator.Configuration;
 using PdfAiEvaluator.Models;
 using System.Text.Json;
+using System.Threading;
 
 namespace PdfAiEvaluator.Services;
 
@@ -24,6 +25,7 @@ public class EvaluationService : IEvaluationService
     private readonly EvaluationSettings _evaluationSettings;
     private readonly ILogger<EvaluationService> _logger;
     private ReportingConfiguration? _reportingConfiguration;
+    private const int MaxConcurrentRequests = 2;
 
     public EvaluationService(
         IAiServiceFactory aiServiceFactory,
@@ -67,15 +69,19 @@ public class EvaluationService : IEvaluationService
 
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
+        var semaphore = new SemaphoreSlim(MaxConcurrentRequests);
 
         foreach (var testCase in testSet.TestCases)
         {
             _logger.LogInformation("Starting evaluation for test case: {TestId}", testCase.TestId);
 
-            // Run multiple iterations in parallel for better reliability
+            // Run multiple iterations for better reliability
             for (int iteration = 1; iteration <= 3; iteration++)
             {
                 var iterationNumber = iteration; // Capture for closure
+
+                // Wait for a slot to become available
+                await semaphore.WaitAsync();
 
                 var task = Task.Run(async () =>
                 {
@@ -103,6 +109,10 @@ public class EvaluationService : IEvaluationService
                     {
                         _logger.LogError(ex, "Error evaluating test case: {TestId}, Iteration: {Iteration}",
                             testCase.TestId, iterationNumber);
+                    }
+                    finally
+                    {
+                        semaphore.Release(); // Release the semaphore slot
                     }
                 });
 
