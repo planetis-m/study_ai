@@ -4,8 +4,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using PdfTextAnalyzer.Models;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Models;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -18,8 +19,8 @@ public class PipelineArchiveManager : IPipelineArchiveManager
         ApplicationSettings appSettings,
         IOptions<ArchiveSettings> settings)
     {
-        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
-        _settings = settings.Value ?? throw new ArgumentNullException(nameof(settings));
+        _appSettings = Guard.NotNull(appSettings, nameof(appSettings));
+        _settings = Guard.NotNullOptions(settings, nameof(settings));
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -30,13 +31,8 @@ public class PipelineArchiveManager : IPipelineArchiveManager
 
     public async Task ArchiveResultAsync(PipelineResult result, CancellationToken cancellationToken)
     {
-        if (result == null)
-            throw new ArgumentNullException(nameof(result));
-
-        if (string.IsNullOrWhiteSpace(_settings.BaseArchiveDirectory))
-            throw new ArgumentException("Base archive directory cannot be null or empty", nameof(_settings.BaseArchiveDirectory));
-
-        cancellationToken.ThrowIfCancellationRequested();
+        Guard.NotNull(result, nameof(result));
+        Guard.ConfigurationNotNullOrWhiteSpace(_settings.BaseArchiveDirectory, "Archive:BaseArchiveDirectory");
 
         try
         {
@@ -49,9 +45,10 @@ public class PipelineArchiveManager : IPipelineArchiveManager
             var pdfDirectoryName = CreateSanitizedDirectoryName(result.PdfPath);
             var pdfArchiveDirectory = Path.Combine(_settings.BaseArchiveDirectory, pdfDirectoryName);
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Ensure the archive directory exists
             Directory.CreateDirectory(pdfArchiveDirectory);
-            cancellationToken.ThrowIfCancellationRequested();
 
             // Create the archive filename
             var archiveFileName = $"{timestampString}_{runId:N}_PipelineResult.json";
@@ -67,15 +64,15 @@ public class PipelineArchiveManager : IPipelineArchiveManager
                 {
                     RunId = runId,
                     ExecutionTimestampUtc = executionTimestamp,
-                    SourcePdfPath = result.PdfPath,
                     Configuration = archiveConfig
                 },
                 PipelineData = result
             };
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Serialize and write to file
             var jsonContent = JsonSerializer.Serialize(archiveData, JsonOptions);
-            cancellationToken.ThrowIfCancellationRequested();
             await File.WriteAllTextAsync(archiveFilePath, jsonContent, cancellationToken);
         }
         catch (OperationCanceledException)
@@ -169,7 +166,6 @@ public class RunMetadata
 {
     public Guid RunId { get; set; }
     public DateTime ExecutionTimestampUtc { get; set; }
-    public string SourcePdfPath { get; set; } = string.Empty;
     public ArchiveConfiguration Configuration { get; set; } = new();
 }
 

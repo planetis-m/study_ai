@@ -1,7 +1,8 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
 using PdfTextAnalyzer.Models;
-using Microsoft.Extensions.Options;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -20,11 +21,11 @@ public class PipelineCore : IPipelineCore
         IPipelineArchiveManager archiveManager,
         IOptions<PipelineSettings> pipelineSettings)
     {
-        _pdfExtractor = pdfExtractor ?? throw new ArgumentNullException(nameof(pdfExtractor));
-        _textCleaning = textCleaning ?? throw new ArgumentNullException(nameof(textCleaning));
-        _textAnalysis = textAnalysis ?? throw new ArgumentNullException(nameof(textAnalysis));
-        _archiveManager = archiveManager ?? throw new ArgumentNullException(nameof(archiveManager));
-        _pipelineSettings = pipelineSettings.Value ?? throw new ArgumentNullException(nameof(pipelineSettings));
+        _pdfExtractor = Guard.NotNull(pdfExtractor, nameof(pdfExtractor));
+        _textCleaning = Guard.NotNull(textCleaning, nameof(textCleaning));
+        _textAnalysis = Guard.NotNull(textAnalysis, nameof(textAnalysis));
+        _archiveManager = Guard.NotNull(archiveManager, nameof(archiveManager));
+        _pipelineSettings = Guard.NotNullOptions(pipelineSettings, nameof(pipelineSettings));
     }
 
     public PipelineSettings GetCurrentSettings() => _pipelineSettings;
@@ -33,8 +34,7 @@ public class PipelineCore : IPipelineCore
     {
         var stopwatch = Stopwatch.StartNew();
 
-        if (string.IsNullOrWhiteSpace(pdfPath))
-            throw new ArgumentException("PDF path cannot be null or empty", nameof(pdfPath));
+        Guard.NotNullOrWhiteSpace(pdfPath, nameof(pdfPath));
 
         if (!File.Exists(pdfPath))
             throw new FileNotFoundException($"PDF file not found: {pdfPath}");

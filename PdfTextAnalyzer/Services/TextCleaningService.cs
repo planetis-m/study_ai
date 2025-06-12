@@ -1,34 +1,33 @@
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
 public class TextCleaningService : AiServiceBase, ITextCleaningService
 {
-    private readonly PreprocessingSettings _preprocessingSettings;
+    private readonly PreprocessingSettings _settings;
 
     public TextCleaningService(
         IAiServiceFactory aiServiceFactory,
-        IOptions<AiSettings> aiSettings,
-        IOptions<PreprocessingSettings> preprocessingSettings)
-        : base(aiServiceFactory, aiSettings)
+        IOptions<PreprocessingSettings> settings)
+        : base(aiServiceFactory)
     {
-        _preprocessingSettings = preprocessingSettings.Value;
+        _settings = Guard.NotNullOptions(settings, nameof(settings));
     }
 
     public async Task<string> CleanAndFormatTextAsync(string rawText, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(rawText))
-            throw new ArgumentException("Raw text cannot be null or empty", nameof(rawText));
+        Guard.NotNullOrWhiteSpace(rawText, nameof(rawText));
 
-        var userMessage = $"{_preprocessingSettings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
+        var userMessage = $"{_settings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
 
         try
         {
             return await CallAiServiceAsync(
-                _preprocessingSettings.SystemMessage,
+                _settings.SystemMessage,
                 userMessage,
-                _preprocessingSettings.Model,
+                _settings.Model,
                 cancellationToken
             );
         }

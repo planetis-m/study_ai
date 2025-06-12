@@ -7,6 +7,7 @@ using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -16,7 +17,7 @@ public class PdfTextExtractor : IPdfTextExtractor
 
     public PdfTextExtractor(IOptions<PdfExtractionSettings> settings)
     {
-        _settings = settings.Value;
+        _settings = Guard.NotNullOptions(settings, nameof(settings));
     }
 
     public async Task<string> ExtractTextAsync(string pdfPath, CancellationToken cancellationToken)

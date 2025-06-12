@@ -1,18 +1,17 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
 public abstract class AiServiceBase
 {
     protected readonly IAiServiceFactory _aiServiceFactory;
-    protected readonly AiSettings _aiSettings;
 
-    protected AiServiceBase(IAiServiceFactory aiServiceFactory, IOptions<AiSettings> aiSettings)
+    protected AiServiceBase(IAiServiceFactory aiServiceFactory)
     {
-        _aiServiceFactory = aiServiceFactory ?? throw new ArgumentNullException(nameof(aiServiceFactory));
-        _aiSettings = aiSettings.Value ?? throw new ArgumentNullException(nameof(aiSettings));
+        _aiServiceFactory = Guard.NotNull(aiServiceFactory, nameof(aiServiceFactory));
     }
 
     protected async Task<string> CallAiServiceAsync(
@@ -21,14 +20,9 @@ public abstract class AiServiceBase
         ModelSettings modelSettings,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(systemMessage))
-            throw new ArgumentException("System message cannot be null or empty", nameof(systemMessage));
-
-        if (string.IsNullOrWhiteSpace(userMessage))
-            throw new ArgumentException("User message cannot be null or empty", nameof(userMessage));
-
-        if (modelSettings == null)
-            throw new ArgumentNullException(nameof(modelSettings));
+        Guard.NotNullOrWhiteSpace(systemMessage, nameof(systemMessage));
+        Guard.NotNullOrWhiteSpace(userMessage, nameof(userMessage));
+        Guard.NotNull(modelSettings, nameof(modelSettings));
 
         // Create chat client for this specific model/provider combination
         var chatClient = _aiServiceFactory.CreateChatClient(modelSettings.Provider, modelSettings.ModelName);

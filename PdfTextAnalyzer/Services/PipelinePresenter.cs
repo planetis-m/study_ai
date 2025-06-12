@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -9,7 +10,7 @@ public class PipelinePresenter : IPipelinePresenter
 
     public PipelinePresenter(IPipelineCore pipelineCore)
     {
-        _pipelineCore = pipelineCore ?? throw new ArgumentNullException(nameof(pipelineCore));
+        _pipelineCore = Guard.NotNull(pipelineCore, nameof(pipelineCore));
     }
 
     public async Task AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken)

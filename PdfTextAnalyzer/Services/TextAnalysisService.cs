@@ -1,34 +1,33 @@
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
+using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
 public class TextAnalysisService : AiServiceBase, ITextAnalysisService
 {
-    private readonly AnalysisSettings _analysisSettings;
+    private readonly AnalysisSettings _settings;
 
     public TextAnalysisService(
         IAiServiceFactory aiServiceFactory,
-        IOptions<AiSettings> aiSettings,
-        IOptions<AnalysisSettings> analysisSettings)
-        : base(aiServiceFactory, aiSettings)
+        IOptions<AnalysisSettings> settings)
+        : base(aiServiceFactory)
     {
-        _analysisSettings = analysisSettings.Value;
+        _settings = Guard.NotNullOptions(settings, nameof(settings));
     }
 
     public async Task<string> AnalyzeTextAsync(string text, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Text cannot be null or empty", nameof(text));
+        Guard.NotNullOrWhiteSpace(text, nameof(text));
 
-        var userMessage = $"{_analysisSettings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
+        var userMessage = $"{_settings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
 
         try
         {
             return await CallAiServiceAsync(
-                _analysisSettings.SystemMessage,
+                _settings.SystemMessage,
                 userMessage,
-                _analysisSettings.Model,
+                _settings.Model,
                 cancellationToken
             );
         }
