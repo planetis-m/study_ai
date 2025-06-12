@@ -10,6 +10,7 @@ public class EvaluationSettings
     public bool EnableResponseCaching { get; set; } = true;
     public int TimeToLiveHours { get; set; } = 6;
     public int MaxConcurrentRequests { get; set; } = 1;
+    public int RequestsPerTestCase { get; set; } = 3;
     public string EvaluatorProvider { get; set; } = "AzureAI";
     public string EvaluatorModel { get; set; } = string.Empty;
     public string TargetProvider { get; set; } = "AzureAI";

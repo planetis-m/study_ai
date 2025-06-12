@@ -58,7 +58,7 @@ public class EvaluationService : IEvaluationService
             enableResponseCaching: _settings.EnableResponseCaching,
             timeToLiveForCacheEntries: TimeSpan.FromHours(_settings.TimeToLiveHours),
             executionName: _settings.ExecutionName,
-            tags: ["prompt-quality", "evaluation", DateTime.UtcNow.ToString("dd-MM-yyyy")]
+            tags: ["prompt-quality", "evaluation"]
         );
 
         // Run evaluations for each test case with multiple iterations
@@ -70,7 +70,7 @@ public class EvaluationService : IEvaluationService
             _logger.LogInformation("Starting evaluation for test case: {TestId}", testCase.TestId);
 
             // Run multiple iterations for better reliability
-            for (int iteration = 1; iteration <= 3; iteration++)
+            for (int iteration = 1; iteration <= _settings.RequestsPerTestCase; iteration++)
             {
                 var iterationNumber = iteration; // Capture for closure
 
@@ -167,7 +167,7 @@ public class EvaluationService : IEvaluationService
 
     public static List<string> GetTagsForTestCase(EvaluationTestData testCase)
     {
-        var tags = new List<string> { "prompt-quality", "evaluation" };
+        var tags = new List<string>();
 
         if (testCase.Tags != null)
         {
