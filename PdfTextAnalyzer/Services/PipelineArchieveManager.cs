@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PdfTextAnalyzer.Models;
+using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -17,7 +18,7 @@ public static class PipelineArchiveManager
 
     public static async Task ArchiveResultAsync(
         PipelineResult result,
-        object configuration,
+        ApplicationSettings configuration,
         string baseArchiveDirectory)
     {
         if (result == null)
@@ -47,6 +48,9 @@ public static class PipelineArchiveManager
             var archiveFileName = $"{timestampString}_{runId:N}_PipelineResult.json";
             var archiveFilePath = Path.Combine(pdfArchiveDirectory, archiveFileName);
 
+            // Create archive configuration with model settings for active stages
+            var archiveConfig = CreateArchiveConfiguration(configuration);
+
             // Create the archive object
             var archiveData = new PipelineArchive
             {
@@ -55,7 +59,7 @@ public static class PipelineArchiveManager
                     RunId = runId,
                     ExecutionTimestampUtc = executionTimestamp,
                     SourcePdfPath = result.PdfPath,
-                    AppSettingsUsed = configuration
+                    Configuration = archiveConfig
                 },
                 PipelineData = result
             };
@@ -68,6 +72,7 @@ public static class PipelineArchiveManager
             Console.WriteLine($"  Archive File: {archiveFilePath}");
             Console.WriteLine($"  Run ID: {runId}");
             Console.WriteLine($"  Timestamp: {executionTimestamp:yyyy-MM-dd HH:mm:ss.fff} UTC");
+            Console.WriteLine($"  Config Hash: {archiveConfig.ConfigurationHash}");
         }
         catch (UnauthorizedAccessException authEx)
         {
@@ -89,6 +94,59 @@ public static class PipelineArchiveManager
             Console.WriteLine($"Unexpected error during archiving: {ex.Message}");
             throw;
         }
+    }
+
+    private static ArchiveConfiguration CreateArchiveConfiguration(ApplicationSettings settings)
+    {
+        var config = new ArchiveConfiguration
+        {
+            PdfExtraction = settings.PdfExtraction,
+            Pipeline = settings.Pipeline
+        };
+
+        // Only include model settings for stages that are enabled
+        if (settings.Pipeline.Preprocessing)
+        {
+            config.PreprocessingModel = settings.Preprocessing.Model;
+            config.PreprocessingSystemMessage = settings.Preprocessing.SystemMessage;
+            config.PreprocessingTaskPrompt = settings.Preprocessing.TaskPrompt;
+        }
+
+        if (settings.Pipeline.Analysis)
+        {
+            config.AnalysisModel = settings.Analysis.Model;
+            config.AnalysisSystemMessage = settings.Analysis.SystemMessage;
+            config.AnalysisTaskPrompt = settings.Analysis.TaskPrompt;
+        }
+
+        // Create hash of all the configuration for integrity checking
+        config.ConfigurationHash = CreateConfigurationHash(config);
+
+        return config;
+    }
+
+    private static string CreateConfigurationHash(ArchiveConfiguration config)
+    {
+        // Create a copy without the hash for hashing (to avoid circular reference)
+        var configForHashing = new
+        {
+            config.PdfExtraction,
+            config.Pipeline,
+            config.PreprocessingModel,
+            config.PreprocessingSystemMessage,
+            config.PreprocessingTaskPrompt,
+            config.AnalysisModel,
+            config.AnalysisSystemMessage,
+            config.AnalysisTaskPrompt
+        };
+
+        // Serialize to JSON for consistent hashing
+        var configJson = JsonSerializer.Serialize(configForHashing, JsonOptions);
+
+        // Create SHA256 hash
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(configJson));
+        return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 
     private static string CreateSanitizedDirectoryName(string pdfPath)
@@ -144,5 +202,24 @@ public class RunMetadata
     public Guid RunId { get; set; }
     public DateTime ExecutionTimestampUtc { get; set; }
     public string SourcePdfPath { get; set; } = string.Empty;
-    public object AppSettingsUsed { get; set; } = new();
+    public ArchiveConfiguration Configuration { get; set; } = new();
+}
+
+public class ArchiveConfiguration
+{
+    public string ConfigurationHash { get; set; } = string.Empty;
+
+    // Always included settings
+    public PdfExtractionSettings PdfExtraction { get; set; } = new();
+    public PipelineSettings Pipeline { get; set; } = new();
+
+    // Preprocessing settings (only if preprocessing is enabled)
+    public ModelSettings? PreprocessingModel { get; set; }
+    public string? PreprocessingSystemMessage { get; set; }
+    public string? PreprocessingTaskPrompt { get; set; }
+
+    // Analysis settings (only if analysis is enabled)
+    public ModelSettings? AnalysisModel { get; set; }
+    public string? AnalysisSystemMessage { get; set; }
+    public string? AnalysisTaskPrompt { get; set; }
 }
