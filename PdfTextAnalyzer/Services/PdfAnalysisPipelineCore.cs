@@ -11,17 +11,36 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
     private readonly ITextCleaningService _textCleaning;
     private readonly ITextAnalysisService _textAnalysis;
     private readonly PipelineSettings _pipelineSettings;
+    private readonly ArchiveSettings _archiveSettings;
+    private readonly ApplicationSettings _allSettings;
 
     public PdfAnalysisPipelineCore(
         IPdfTextExtractor pdfExtractor,
         ITextCleaningService textCleaning,
         ITextAnalysisService textAnalysis,
-        IOptions<PipelineSettings> pipelineSettings)
+        IOptions<PipelineSettings> pipelineSettings,
+        IOptions<ArchiveSettings> archiveSettings,
+        IOptions<AiSettings> aiSettings,
+        IOptions<PdfExtractionSettings> pdfExtractionSettings,
+        IOptions<PreprocessingSettings> preprocessingSettings,
+        IOptions<AnalysisSettings> analysisSettings)
     {
         _pdfExtractor = pdfExtractor ?? throw new ArgumentNullException(nameof(pdfExtractor));
         _textCleaning = textCleaning ?? throw new ArgumentNullException(nameof(textCleaning));
         _textAnalysis = textAnalysis ?? throw new ArgumentNullException(nameof(textAnalysis));
         _pipelineSettings = pipelineSettings.Value ?? throw new ArgumentNullException(nameof(pipelineSettings));
+        _archiveSettings = archiveSettings.Value ?? throw new ArgumentNullException(nameof(archiveSettings));
+
+        // Create a snapshot of all settings for archiving
+        _allSettings = new ApplicationSettings
+        {
+            Pipeline = _pipelineSettings,
+            Archive = _archiveSettings,
+            AI = aiSettings.Value,
+            PdfExtraction = pdfExtractionSettings.Value,
+            Preprocessing = preprocessingSettings.Value,
+            Analysis = analysisSettings.Value
+        };
     }
 
     public PipelineSettings GetCurrentSettings() => _pipelineSettings;
@@ -55,7 +74,7 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
 
         stopwatch.Stop();
 
-        return new PipelineResult
+        var result = new PipelineResult
         {
             PdfPath = pdfPath,
             ExtractedText = extractedText,
@@ -63,5 +82,24 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
             Analysis = analysis,
             ProcessingTime = stopwatch.Elapsed
         };
+
+        // Archive the result if archiving is enabled
+        if (_archiveSettings.EnableArchiving)
+        {
+            try
+            {
+                await PipelineArchiveManager.ArchiveResultAsync(
+                    result,
+                    _allSettings,
+                    _archiveSettings.BaseArchiveDirectory);
+            }
+            catch (Exception archiveEx)
+            {
+                Console.WriteLine($"Warning: Failed to archive pipeline result: {archiveEx.Message}");
+                // Don't fail the pipeline if archiving fails
+            }
+        }
+
+        return result;
     }
 }
