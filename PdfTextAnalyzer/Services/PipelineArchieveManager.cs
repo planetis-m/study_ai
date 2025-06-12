@@ -119,30 +119,16 @@ public class PipelineArchiveManager : IPipelineArchiveManager
 
     private static string CreateSanitizedDirectoryName(string pdfPath)
     {
-        // Extract filename without extension
         var fileName = Path.GetFileNameWithoutExtension(pdfPath);
 
         if (string.IsNullOrWhiteSpace(fileName))
-        {
-            // If no valid filename, create hash of full path
             return CreateHashDirectoryName(pdfPath);
-        }
 
-        // Remove invalid characters for directory names
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var sanitized = string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        // URL encoding approach - creates safe strings
+        var sanitized = Uri.EscapeDataString(fileName);
 
-        // Replace multiple consecutive underscores with single underscore
-        sanitized = Regex.Replace(sanitized, "_+", "_");
-
-        // Trim leading/trailing underscores
-        sanitized = sanitized.Trim('_');
-
-        // If sanitized name is empty or too long, create hash-based name
-        if (string.IsNullOrWhiteSpace(sanitized) || sanitized.Length > 100)
-        {
+        if (sanitized.Length > 100)
             return CreateHashDirectoryName(pdfPath);
-        }
 
         return sanitized;
     }
