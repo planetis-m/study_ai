@@ -3,11 +3,11 @@ using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public class PdfAnalysisPipelinePresenter : IPdfAnalysisPipelinePresenter
+public class PipelinePresenter : IPipelinePresenter
 {
-    private readonly IPdfAnalysisPipelineCore _pipelineCore;
+    private readonly IPipelineCore _pipelineCore;
 
-    public PdfAnalysisPipelinePresenter(IPdfAnalysisPipelineCore pipelineCore)
+    public PipelinePresenter(IPipelineCore pipelineCore)
     {
         _pipelineCore = pipelineCore ?? throw new ArgumentNullException(nameof(pipelineCore));
     }

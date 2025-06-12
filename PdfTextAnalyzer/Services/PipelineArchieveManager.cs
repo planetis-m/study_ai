@@ -3,32 +3,40 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Models;
 using PdfTextAnalyzer.Configuration;
 
 namespace PdfTextAnalyzer.Services;
 
-public static class PipelineArchiveManager
+public class PipelineArchiveManager : IPipelineArchiveManager
 {
+    private readonly ArchiveSettings _settings;
+    private readonly ApplicationSettings _appSettings;
+
+    public PipelineArchiveManager(
+        ApplicationSettings appSettings,
+        IOptions<ArchiveSettings> settings)
+    {
+        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+        _settings = settings.Value ?? throw new ArgumentNullException(nameof(settings));
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = null
     };
 
-    public static async Task ArchiveResultAsync(
-        PipelineResult result,
-        ApplicationSettings configuration,
-        string baseArchiveDirectory)
+    public async Task ArchiveResultAsync(PipelineResult result, CancellationToken cancellationToken)
     {
         if (result == null)
             throw new ArgumentNullException(nameof(result));
 
-        if (configuration == null)
-            throw new ArgumentNullException(nameof(configuration));
+        if (string.IsNullOrWhiteSpace(_settings.BaseArchiveDirectory))
+            throw new ArgumentException("Base archive directory cannot be null or empty", nameof(_settings.BaseArchiveDirectory));
 
-        if (string.IsNullOrWhiteSpace(baseArchiveDirectory))
-            throw new ArgumentException("Base archive directory cannot be null or empty", nameof(baseArchiveDirectory));
+        cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
@@ -39,17 +47,18 @@ public static class PipelineArchiveManager
 
             // Create sanitized directory name for the PDF
             var pdfDirectoryName = CreateSanitizedDirectoryName(result.PdfPath);
-            var pdfArchiveDirectory = Path.Combine(baseArchiveDirectory, pdfDirectoryName);
+            var pdfArchiveDirectory = Path.Combine(_settings.BaseArchiveDirectory, pdfDirectoryName);
 
             // Ensure the archive directory exists
             Directory.CreateDirectory(pdfArchiveDirectory);
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Create the archive filename
             var archiveFileName = $"{timestampString}_{runId:N}_PipelineResult.json";
             var archiveFilePath = Path.Combine(pdfArchiveDirectory, archiveFileName);
 
             // Create minimal archive configuration with only essential model info
-            var archiveConfig = CreateArchiveConfiguration(configuration);
+            var archiveConfig = CreateArchiveConfiguration(_appSettings);
 
             // Create the archive object
             var archiveData = new PipelineArchive
@@ -66,33 +75,16 @@ public static class PipelineArchiveManager
 
             // Serialize and write to file
             var jsonContent = JsonSerializer.Serialize(archiveData, JsonOptions);
-            await File.WriteAllTextAsync(archiveFilePath, jsonContent);
-
-            Console.WriteLine($"Pipeline result archived successfully:");
-            Console.WriteLine($"  Archive File: {archiveFilePath}");
-            Console.WriteLine($"  Run ID: {runId}");
-            Console.WriteLine($"  Timestamp: {executionTimestamp:yyyy-MM-dd HH:mm:ss.fff} UTC");
-            Console.WriteLine($"  Config Hash: {archiveConfig.ConfigurationHash}");
+            cancellationToken.ThrowIfCancellationRequested();
+            await File.WriteAllTextAsync(archiveFilePath, jsonContent, cancellationToken);
         }
-        catch (UnauthorizedAccessException authEx)
+        catch (OperationCanceledException)
         {
-            Console.WriteLine($"Access denied when creating archive: {authEx.Message}");
-            throw;
-        }
-        catch (DirectoryNotFoundException dirEx)
-        {
-            Console.WriteLine($"Directory not found when creating archive: {dirEx.Message}");
-            throw;
-        }
-        catch (IOException ioEx)
-        {
-            Console.WriteLine($"Error writing archive file: {ioEx.Message}");
             throw;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error during archiving: {ex.Message}");
-            throw;
+            throw new InvalidOperationException($"Failed to archive pipeline result: {ex.Message}", ex);
         }
     }
 
@@ -130,9 +122,6 @@ public static class PipelineArchiveManager
 
     private static string CreateSanitizedDirectoryName(string pdfPath)
     {
-        if (string.IsNullOrWhiteSpace(pdfPath))
-            return "unknown_pdf";
-
         // Extract filename without extension
         var fileName = Path.GetFileNameWithoutExtension(pdfPath);
 
@@ -192,4 +181,3 @@ public class ArchiveConfiguration
     public ModelSettings? PreprocessingModel { get; set; }
     public ModelSettings? AnalysisModel { get; set; }
 }
-

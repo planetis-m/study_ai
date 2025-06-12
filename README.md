@@ -153,13 +153,13 @@ study_ai/
 │   ├── Services/                      # Service implementations
 │   │   ├── AiServiceBase.cs
 │   │   ├── AiServiceFactory.cs
-│   │   ├── IPdfAnalysisPipelineCore.cs
-│   │   ├── IPdfAnalysisPipelinePresenter.cs
+│   │   ├── IPipelineCore.cs
+│   │   ├── IPipelinePresenter.cs
 │   │   ├── IPdfTextExtractor.cs
 │   │   ├── ITextAnalysisAiService.cs
 │   │   ├── ITextCleaningService.cs
-│   │   ├── PdfAnalysisPipelineCore.cs
-│   │   ├── PdfAnalysisPipelinePresenter.cs
+│   │   ├── PipelineCore.cs
+│   │   ├── PipelinePresenter.cs
 │   │   ├── PdfTextExtractor.cs
 │   │   ├── TextAnalysisService.cs
 │   │   └── TextCleaningService.cs
