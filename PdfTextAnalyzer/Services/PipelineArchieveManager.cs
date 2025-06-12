@@ -48,7 +48,7 @@ public static class PipelineArchiveManager
             var archiveFileName = $"{timestampString}_{runId:N}_PipelineResult.json";
             var archiveFilePath = Path.Combine(pdfArchiveDirectory, archiveFileName);
 
-            // Create archive configuration with model settings for active stages
+            // Create minimal archive configuration with only essential model info
             var archiveConfig = CreateArchiveConfiguration(configuration);
 
             // Create the archive object
@@ -98,50 +98,29 @@ public static class PipelineArchiveManager
 
     private static ArchiveConfiguration CreateArchiveConfiguration(ApplicationSettings settings)
     {
-        var config = new ArchiveConfiguration
-        {
-            PdfExtraction = settings.PdfExtraction,
-            Pipeline = settings.Pipeline
-        };
+        var config = new ArchiveConfiguration();
 
-        // Only include model settings for stages that are enabled
+        // Only include model info for stages that are enabled
         if (settings.Pipeline.Preprocessing)
         {
             config.PreprocessingModel = settings.Preprocessing.Model;
-            config.PreprocessingSystemMessage = settings.Preprocessing.SystemMessage;
-            config.PreprocessingTaskPrompt = settings.Preprocessing.TaskPrompt;
         }
 
         if (settings.Pipeline.Analysis)
         {
             config.AnalysisModel = settings.Analysis.Model;
-            config.AnalysisSystemMessage = settings.Analysis.SystemMessage;
-            config.AnalysisTaskPrompt = settings.Analysis.TaskPrompt;
         }
 
-        // Create hash of all the configuration for integrity checking
-        config.ConfigurationHash = CreateConfigurationHash(config);
+        // Create hash of the minimal configuration for integrity checking
+        config.ConfigurationHash = CreateConfigurationHash(settings);
 
         return config;
     }
 
-    private static string CreateConfigurationHash(ArchiveConfiguration config)
+    private static string CreateConfigurationHash(ApplicationSettings settings)
     {
-        // Create a copy without the hash for hashing (to avoid circular reference)
-        var configForHashing = new
-        {
-            config.PdfExtraction,
-            config.Pipeline,
-            config.PreprocessingModel,
-            config.PreprocessingSystemMessage,
-            config.PreprocessingTaskPrompt,
-            config.AnalysisModel,
-            config.AnalysisSystemMessage,
-            config.AnalysisTaskPrompt
-        };
-
         // Serialize to JSON for consistent hashing
-        var configJson = JsonSerializer.Serialize(configForHashing, JsonOptions);
+        var configJson = JsonSerializer.Serialize(settings, JsonOptions);
 
         // Create SHA256 hash
         using var sha256 = SHA256.Create();
@@ -209,17 +188,8 @@ public class ArchiveConfiguration
 {
     public string ConfigurationHash { get; set; } = string.Empty;
 
-    // Always included settings
-    public PdfExtractionSettings PdfExtraction { get; set; } = new();
-    public PipelineSettings Pipeline { get; set; } = new();
-
-    // Preprocessing settings (only if preprocessing is enabled)
+    // Only include model info for active stages
     public ModelSettings? PreprocessingModel { get; set; }
-    public string? PreprocessingSystemMessage { get; set; }
-    public string? PreprocessingTaskPrompt { get; set; }
-
-    // Analysis settings (only if analysis is enabled)
     public ModelSettings? AnalysisModel { get; set; }
-    public string? AnalysisSystemMessage { get; set; }
-    public string? AnalysisTaskPrompt { get; set; }
 }
+
