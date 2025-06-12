@@ -5,35 +5,30 @@ using Microsoft.Extensions.AI.Evaluation.Reporting;
 using Microsoft.Extensions.AI.Evaluation.Reporting.Storage;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using PdfAiEvaluator.Converters;
 using PdfAiEvaluator.Configuration;
+using PdfAiEvaluator.Converters;
+using PdfAiEvaluator.Validation;
 using PdfAiEvaluator.Models;
 using System.Text.Json;
 using System.Threading;
 
 namespace PdfAiEvaluator.Services;
 
-public interface IEvaluationService
-{
-    Task RunEvaluationAsync(string testDataPath);
-    Task GenerateReportAsync();
-}
-
 public class EvaluationService : IEvaluationService
 {
     private readonly IAiServiceFactory _aiServiceFactory;
-    private readonly EvaluationSettings _evaluationSettings;
+    private readonly EvaluationSettings _settings;
     private readonly ILogger<EvaluationService> _logger;
     private ReportingConfiguration? _reportingConfiguration;
     private const int MaxConcurrentRequests = 2;
 
     public EvaluationService(
         IAiServiceFactory aiServiceFactory,
-        IOptions<EvaluationSettings> evaluationSettings,
+        IOptions<EvaluationSettings> settings,
         ILogger<EvaluationService> logger)
     {
         _aiServiceFactory = aiServiceFactory;
-        _evaluationSettings = evaluationSettings.Value;
+        _settings = Guard.NotNullOptions(settings, nameof(settings));
         _logger = logger;
     }
 
@@ -46,24 +41,24 @@ public class EvaluationService : IEvaluationService
 
         // Create chat clients
         var targetChatClient = _aiServiceFactory.CreateChatClient(
-            _evaluationSettings.TargetProvider,
-            _evaluationSettings.TargetModel);
+            _settings.TargetProvider,
+            _settings.TargetModel);
 
         var evaluatorChatClient = _aiServiceFactory.CreateChatClient(
-            _evaluationSettings.EvaluatorProvider,
-            _evaluationSettings.EvaluatorModel);
+            _settings.EvaluatorProvider,
+            _settings.EvaluatorModel);
 
         // Create evaluators
         var evaluators = CreateEvaluators();
 
         // Create reporting configuration with disk-based storage
         _reportingConfiguration = DiskBasedReportingConfiguration.Create(
-            storageRootPath: _evaluationSettings.StorageRootPath,
+            storageRootPath: _settings.StorageRootPath,
             evaluators: evaluators,
             chatConfiguration: new ChatConfiguration(evaluatorChatClient),
-            enableResponseCaching: _evaluationSettings.EnableResponseCaching,
-            timeToLiveForCacheEntries: TimeSpan.FromHours(_evaluationSettings.TimeToLiveHours),
-            executionName: _evaluationSettings.ExecutionName,
+            enableResponseCaching: _settings.EnableResponseCaching,
+            timeToLiveForCacheEntries: TimeSpan.FromHours(_settings.TimeToLiveHours),
+            executionName: _settings.ExecutionName,
             tags: ["prompt-quality", "evaluation", DateTime.UtcNow.ToString("yyyy-MM-dd")]
         );
 
@@ -124,18 +119,25 @@ public class EvaluationService : IEvaluationService
         await Task.WhenAll(evaluationTasks);
 
         _logger.LogInformation("Evaluation run completed. Results stored in: {StoragePath}",
-            _evaluationSettings.StorageRootPath);
+            _settings.StorageRootPath);
     }
 
     public async Task GenerateReportAsync()
     {
-        _logger.LogInformation("Report generation instructions:");
-        _logger.LogInformation("1. Install the AI evaluation console tool:");
-        _logger.LogInformation("   dotnet tool install Microsoft.Extensions.AI.Evaluation.Console");
-        _logger.LogInformation("2. Generate HTML report:");
-        _logger.LogInformation("   dotnet aieval report --path \"{0}\" --output report.html",
-            Path.GetFullPath(_evaluationSettings.StorageRootPath));
+    _logger.LogInformation(
+    var storagePath = Path.GetFullPath(_evaluationSettings.StorageRootPath);
+    var instructions = $"""
+    Report generation instructions:
+      1. Install the AI evaluation console tool:
+         dotnet new tool-manifest
+         dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
 
+      2. Generate HTML report:
+         dotnet aieval report --path "{storagePath}" --output report.html --open
+
+    """;
+
+        _logger.LogInformation(instructions);
         await Task.CompletedTask;
     }
 
