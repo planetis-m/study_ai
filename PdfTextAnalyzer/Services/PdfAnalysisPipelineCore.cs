@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
 using PdfTextAnalyzer.Models;
 
@@ -10,40 +9,21 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly ITextCleaningService _textCleaning;
     private readonly ITextAnalysisService _textAnalysis;
-    private readonly PipelineSettings _pipelineSettings;
-    private readonly ArchiveSettings _archiveSettings;
-    private readonly ApplicationSettings _allSettings;
+    private readonly ApplicationSettings _appSettings;
 
     public PdfAnalysisPipelineCore(
         IPdfTextExtractor pdfExtractor,
         ITextCleaningService textCleaning,
         ITextAnalysisService textAnalysis,
-        IOptions<PipelineSettings> pipelineSettings,
-        IOptions<ArchiveSettings> archiveSettings,
-        IOptions<AiSettings> aiSettings,
-        IOptions<PdfExtractionSettings> pdfExtractionSettings,
-        IOptions<PreprocessingSettings> preprocessingSettings,
-        IOptions<AnalysisSettings> analysisSettings)
+        ApplicationSettings appSettings)
     {
         _pdfExtractor = pdfExtractor ?? throw new ArgumentNullException(nameof(pdfExtractor));
         _textCleaning = textCleaning ?? throw new ArgumentNullException(nameof(textCleaning));
         _textAnalysis = textAnalysis ?? throw new ArgumentNullException(nameof(textAnalysis));
-        _pipelineSettings = pipelineSettings.Value ?? throw new ArgumentNullException(nameof(pipelineSettings));
-        _archiveSettings = archiveSettings.Value ?? throw new ArgumentNullException(nameof(archiveSettings));
-
-        // Create a snapshot of all settings for archiving
-        _allSettings = new ApplicationSettings
-        {
-            Pipeline = _pipelineSettings,
-            Archive = _archiveSettings,
-            AI = aiSettings.Value,
-            PdfExtraction = pdfExtractionSettings.Value,
-            Preprocessing = preprocessingSettings.Value,
-            Analysis = analysisSettings.Value
-        };
+        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
     }
 
-    public PipelineSettings GetCurrentSettings() => _pipelineSettings;
+    public PipelineSettings GetCurrentSettings() => _appSettings.Pipeline;
 
     public async Task<PipelineResult> AnalyzePdfAsync(string pdfPath, CancellationToken cancellationToken)
     {
@@ -60,14 +40,14 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
 
         // Step 2: Clean and format the extracted text using preprocessing model
         string? cleanedText = null;
-        if (_pipelineSettings.Preprocessing)
+        if (_appSettings.Pipeline.Preprocessing)
         {
             cleanedText = await _textCleaning.CleanAndFormatTextAsync(extractedText, cancellationToken);
         }
 
         // Step 3: Send cleaned text to main LLM for analysis
         string? analysis = null;
-        if (_pipelineSettings.Analysis)
+        if (_appSettings.Pipeline.Analysis)
         {
             analysis = await _textAnalysis.AnalyzeTextAsync(cleanedText ?? extractedText, cancellationToken);
         }
@@ -84,14 +64,14 @@ public class PdfAnalysisPipelineCore : IPdfAnalysisPipelineCore
         };
 
         // Archive the result if archiving is enabled
-        if (_archiveSettings.EnableArchiving)
+        if (_appSettings.Archive.EnableArchiving)
         {
             try
             {
                 await PipelineArchiveManager.ArchiveResultAsync(
                     result,
-                    _allSettings,
-                    _archiveSettings.BaseArchiveDirectory);
+                    _appSettings,
+                    _appSettings.Archive.BaseArchiveDirectory);
             }
             catch (Exception archiveEx)
             {

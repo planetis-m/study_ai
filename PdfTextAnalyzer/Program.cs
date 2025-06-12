@@ -32,17 +32,12 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        // Build host with strongly-typed configuration
+        // Build host with simplified configuration
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
-                // Register configuration sections
-                services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
-                services.Configure<PipelineSettings>(configuration.GetSection(PipelineSettings.SectionName));
-                services.Configure<ArchiveSettings>(configuration.GetSection(ArchiveSettings.SectionName));
-                services.Configure<PdfExtractionSettings>(configuration.GetSection(PdfExtractionSettings.SectionName));
-                services.Configure<AnalysisSettings>(configuration.GetSection(AnalysisSettings.SectionName));
-                services.Configure<PreprocessingSettings>(configuration.GetSection(PreprocessingSettings.SectionName));
+                // Register all configuration sections through extension method
+                services.RegisterConfiguration(configuration);
 
                 // Register AI service factory
                 services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
