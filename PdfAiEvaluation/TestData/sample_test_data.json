@@ -32,7 +32,7 @@
         }
       ],
       "GroundTruth": "The derivative of x^2 is 2x. This follows from the power rule: d/dx(x^n) = n*x^(n-1).",
-      "Tags": ["calculus"],
+      "Tags": ["calculus"]
     },
     {
       "TestId": "groundedness-test-1",
@@ -48,7 +48,7 @@
         }
       ],
       "GroundingContext": "Product X is a revolutionary software tool that includes: automated testing capabilities, real-time collaboration features, and advanced analytics dashboard. It supports integration with over 50 third-party services and provides enterprise-grade security with SOC 2 compliance.",
-      "Tags": ["Metadata"],
+      "Tags": ["product-analysis"]
     },
     {
       "TestId": "completeness-test-2",
@@ -64,7 +64,7 @@
         }
       ],
       "GroundTruth": "A complete recipe should include: ingredients list with measurements, step-by-step instructions, baking temperature and time, yield/serving size, prep time, and any helpful tips or variations.",
-      "Tags": ["Metadata"],
+      "Tags": ["cooking"]
     },
     {
       "TestId": "equivalence-test-2",
@@ -80,7 +80,7 @@
         }
       ],
       "GroundTruth": "World War II ended in 1945. The war in Europe ended on May 8, 1945 (VE Day), and the war in the Pacific ended on September 2, 1945 (VJ Day) after Japan surrendered.",
-      "Tags": ["Metadata"],
+      "Tags": ["history"]
     }
   ]
 }
