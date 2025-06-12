@@ -123,16 +123,16 @@ public class EvaluationService : IEvaluationService
 
     public async Task GenerateReportAsync()
     {
-    var storagePath = Path.GetFullPath(_settings.StorageRootPath);
-    var instructions = $"""
-    Report generation instructions:
-      1. Install the AI evaluation console tool:
-         dotnet new tool-manifest
-         dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
+        var storagePath = Path.GetFullPath(_settings.StorageRootPath);
+        var instructions = $"""
+        Report generation instructions:
+        1. Install the AI evaluation console tool:
+            dotnet new tool-manifest
+            dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
 
-      2. Generate HTML report:
-         dotnet aieval report --path "{storagePath}" --output report.html --open
-    """;
+        2. Generate HTML report:
+            dotnet aieval report --path "{storagePath}" --output report.html --open
+        """;
 
         _logger.LogInformation(instructions);
         await Task.CompletedTask;
