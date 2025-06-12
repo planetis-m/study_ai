@@ -48,7 +48,7 @@ class Program
             logger.LogInformation("Starting Prompt Quality Evaluation Application");
 
             // Ensure test data exists
-            var testDataPath = Path.Combine("TestData", "sample-test-data.json");
+            var testDataPath = Path.Combine("TestData", "sample_test_data.json");
             if (!File.Exists(testDataPath))
             {
                 logger.LogError("Test data file not found: {TestDataPath}", testDataPath);
