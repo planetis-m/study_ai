@@ -14,7 +14,7 @@ internal static class ExitCode
 
 class Program
 {
-    public static async Task<int> Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
         // Setup cancellation token for graceful shutdown
         using var cts = new CancellationTokenSource();
