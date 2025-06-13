@@ -2,6 +2,7 @@
   "Name": "TeachingAssistantSlideEvaluation",
   "Description": "Test cases for evaluating a teaching assistant's ability to extract and explain key information from slide content.",
   "Evaluators": ["Groundedness", "Relevance", "Coherence", "Fluency"],
+  "Tags": ["prompt-quality", "evaluation"],
   "Messages": [
     {
       "Role": "system",

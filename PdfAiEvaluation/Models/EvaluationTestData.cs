@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI.Evaluation;
+using PdfAiEvaluator.Utilities;
 
 namespace PdfAiEvaluator.Models;
 
@@ -13,7 +14,7 @@ public enum EvaluatorType
     Relevance
 }
 
-public class EvaluationTestData
+public class EvaluationTestData : TagsHelper.IHasTags
 {
     public string TestId { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -24,11 +25,12 @@ public class EvaluationTestData
     public List<string>? Tags { get; set; }
 }
 
-public class EvaluationTestSet
+public class EvaluationTestSet : TagsHelper.IHasTags
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<EvaluatorType> Evaluators { get; set; } = new();
     public List<ChatMessage>? Messages { get; set; }
     public List<EvaluationTestData> TestCases { get; set; } = new();
+    public List<string>? Tags { get; set; }
 }

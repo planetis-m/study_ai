@@ -8,6 +8,7 @@ using PdfAiEvaluator.Configuration;
 using PdfAiEvaluator.Converters;
 using PdfAiEvaluator.Validation;
 using PdfAiEvaluator.Models;
+using PdfAiEvaluator.Utilities;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -66,7 +67,7 @@ public class EvaluationService : IEvaluationService
             enableResponseCaching: settings.EnableResponseCaching,
             timeToLiveForCacheEntries: TimeSpan.FromHours(settings.TimeToLiveHours),
             executionName: settings.ExecutionName,
-            tags: ["prompt-quality", "evaluation"]
+            tags: TagsHelper.GetTags(testSet)
         );
 
         // Run evaluations for each test case with multiple iterations
@@ -98,7 +99,7 @@ public class EvaluationService : IEvaluationService
                         await using ScenarioRun scenarioRun = await reportingConfiguration.CreateScenarioRunAsync(
                             scenarioName: scenarioName,
                             iterationName: iterationNumber.ToString(),
-                            additionalTags: GetTagsForTestCase(testCase));
+                            additionalTags: TagsHelper.GetTags(testCase));
 
                         // Prepare messages for the target chat client (including additional context)
                         var messagesForTarget = PrepareMessagesForTarget(testSet, testCase);
@@ -262,24 +263,6 @@ public class EvaluationService : IEvaluationService
         }
 
         return evaluators;
-    }
-
-    public static List<string> GetTagsForTestCase(EvaluationTestData testCase)
-    {
-        var tags = new List<string>();
-
-        if (testCase.Tags != null)
-        {
-            foreach (var tag in testCase.Tags)
-            {
-                if (!string.IsNullOrWhiteSpace(tag))
-                {
-                    tags.Add(tag);
-                }
-            }
-        }
-
-        return tags;
     }
 
     private List<EvaluationContext> CreateAdditionalContextForScenario(EvaluationTestData testCase)

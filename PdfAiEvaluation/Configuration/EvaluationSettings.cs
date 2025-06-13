@@ -15,9 +15,9 @@ public class EvaluationSettings
     public int IterationsPerTestCase { get; set; } = 3;
     public int ModelResponseTimeout { get; set; } = 3;
     public int EvaluationTimeout { get; set; } = 5;
-    public string EvaluatorProvider { get; set; } = "AzureAI";
+    public string EvaluatorProvider { get; set; } = "azureai";
     public string EvaluatorModel { get; set; } = string.Empty;
-    public string TargetProvider { get; set; } = "AzureAI";
+    public string TargetProvider { get; set; } = "azureai";
     public string TargetModel { get; set; } = string.Empty;
     public ChatOptions TargetOptions { get; set; } = new();
 }
