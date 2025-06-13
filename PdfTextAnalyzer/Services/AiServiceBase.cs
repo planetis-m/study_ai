@@ -33,15 +33,8 @@ public abstract class AiServiceBase
             new(ChatRole.User, userMessage)
         };
 
-        var options = new ChatOptions
-        {
-            MaxOutputTokens = modelSettings.MaxTokens,
-            Temperature = modelSettings.Temperature,
-            TopP = modelSettings.TopP,
-        };
-
         var response = await ExecuteWithTimeoutAsync(
-            async (ct) => await chatClient.GetResponseAsync(messages, options, ct),
+            async (ct) => await chatClient.GetResponseAsync(messages, modelSettings.Options, ct),
             TimeSpan.FromMinutes(5),
             cancellationToken);
 

@@ -100,22 +100,12 @@ public class EvaluationService : IEvaluationService
                             iterationName: iterationNumber.ToString(),
                             additionalTags: GetTagsForTestCase(testCase));
 
-                        // Create chat options using the evaluation's ChatSettings
-                        var chatOptions = new ChatOptions
-                        {
-                            MaxOutputTokens = settings.TargetSettings.MaxOutputTokens,
-                            Temperature = settings.TargetSettings.Temperature,
-                            TopP = settings.TargetSettings.TopP,
-                            FrequencyPenalty = settings.TargetSettings.FrequencyPenalty,
-                            PresencePenalty = settings.TargetSettings.PresencePenalty
-                        };
-
                         // Prepare messages for the target chat client (including additional context)
                         var messagesForTarget = PrepareMessagesForTarget(testSet, testCase);
 
                         // Get model response using the target chat client
                         var modelResponse = await ExecuteWithTimeoutAsync(
-                            async (ct) => await targetChatClient.GetResponseAsync(messagesForTarget, chatOptions, ct),
+                            async (ct) => await targetChatClient.GetResponseAsync(messagesForTarget, settings.TargetOptions, ct),
                             TimeSpan.FromMinutes(settings.ModelResponseTimeout),
                             cancellationToken);
 
@@ -208,7 +198,7 @@ public class EvaluationService : IEvaluationService
         Guard.NotNullOrWhiteSpace(settings.EvaluatorModel, nameof(settings.EvaluatorModel));
         Guard.NotNullOrWhiteSpace(settings.TargetProvider, nameof(settings.TargetProvider));
         Guard.NotNullOrWhiteSpace(settings.TargetModel, nameof(settings.TargetModel));
-        Guard.NotNull(settings.TargetSettings, nameof(settings.TargetSettings));
+        Guard.NotNull(settings.TargetOptions, nameof(settings.TargetOptions));
 
         if (!File.Exists(settings.TestDataPath))
         {

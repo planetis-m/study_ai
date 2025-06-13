@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace PdfAiEvaluator.Configuration;
 
 public class EvaluationSettings
@@ -17,5 +19,5 @@ public class EvaluationSettings
     public string EvaluatorModel { get; set; } = string.Empty;
     public string TargetProvider { get; set; } = "AzureAI";
     public string TargetModel { get; set; } = string.Empty;
-    public ChatSettings TargetSettings { get; set; } = new();
+    public ChatOptions TargetOptions { get; set; } = new();
 }
