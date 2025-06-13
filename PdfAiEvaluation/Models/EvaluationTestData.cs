@@ -29,6 +29,6 @@ public class EvaluationTestSet
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<EvaluatorType> Evaluators { get; set; } = new();
-    public List<ChatMessage>? Messages { get; set; } = new();
+    public List<ChatMessage>? Messages { get; set; }
     public List<EvaluationTestData> TestCases { get; set; } = new();
 }
