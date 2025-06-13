@@ -8,10 +8,25 @@ using PdfAiEvaluator.Services;
 
 namespace PdfAiEvaluator;
 
+internal static class ExitCode
+{
+    public const int Success = 0;
+    public const int Failure = 1;
+}
+
 class Program
 {
-    static async Task Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
+        // Setup cancellation token for graceful shutdown
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            Console.WriteLine("\nCancellation requested. Shutting down gracefully...");
+            cts.Cancel();
+        };
+
         // Build configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -52,22 +67,29 @@ class Program
             // Ensure test data exists
             if (!File.Exists(settings.TestDataPath))
             {
-                logger.LogError($"Test data file not found: {settings.TestDataPath}" +
-                    "Please ensure the test data file exists before running evaluation.");
-                return;
+                logger.LogError("Test data file not found: {TestDataPath}. " +
+                    "Please ensure the test data file exists before running evaluation.", settings.TestDataPath);
+                return ExitCode.Failure;
             }
 
-            // Run evaluation
-            await evaluationService.RunEvaluationAsync(settings.TestDataPath);
+            // Run evaluation with cancellation token
+            await evaluationService.RunEvaluationAsync(settings.TestDataPath, cts.Token);
 
             // Provide report generation instructions
-            await evaluationService.GenerateReportAsync();
+            await evaluationService.GenerateReportAsync(cts.Token);
 
             logger.LogInformation("Application completed successfully");
+            return ExitCode.Success;
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogInformation("Application was cancelled by user");
+            return ExitCode.Failure;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "An error occurred during evaluation");
+            return ExitCode.Failure;
         }
     }
 }

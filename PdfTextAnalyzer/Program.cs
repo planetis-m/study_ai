@@ -21,6 +21,7 @@ class Program
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
+            Console.WriteLine("\nCancellation requested. Shutting down gracefully...");
             cts.Cancel();
         };
 
@@ -69,12 +70,12 @@ class Program
         try
         {
             await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath, cts.Token);
-            Console.WriteLine("\nProcessing completed successfully!");
+            Console.WriteLine("Processing completed successfully!");
             return ExitCode.Success;
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("\nOperation was cancelled by user.");
+            Console.WriteLine("Operation was cancelled by user.");
             return ExitCode.Failure;
         }
         catch (Exception ex)

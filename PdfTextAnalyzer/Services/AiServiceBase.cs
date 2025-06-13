@@ -40,7 +40,11 @@ public abstract class AiServiceBase
             TopP = modelSettings.TopP,
         };
 
-        var response = await chatClient.GetResponseAsync(messages, options, cancellationToken);
+        var response = await ExecuteWithTimeoutAsync(
+            async (ct) => await chatClient.GetResponseAsync(messages, options, ct),
+            TimeSpan.FromMinutes(5),
+            cancellationToken);
+
         var message = response.Text;
 
         if (string.IsNullOrWhiteSpace(message))
@@ -49,5 +53,23 @@ public abstract class AiServiceBase
         }
 
         return message;
+    }
+
+    private async Task<T> ExecuteWithTimeoutAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        using var timeoutCts = new CancellationTokenSource(timeout);
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        try
+        {
+            return await operation(combinedCts.Token);
+        }
+        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Operation timed out after {timeout.TotalMinutes} minutes");
+        }
     }
 }

@@ -31,12 +31,13 @@ public class EvaluationService : IEvaluationService
         _logger = logger;
     }
 
-    public async Task RunEvaluationAsync(string testDataPath)
+    public async Task RunEvaluationAsync(string testDataPath, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _logger.LogInformation("Starting evaluation run...");
 
         // Load test data
-        var testSet = await LoadTestDataAsync(testDataPath);
+        var testSet = await LoadTestDataAsync(testDataPath, cancellationToken);
 
         // Create chat clients
         var targetChatClient = _aiServiceFactory.CreateChatClient(
@@ -67,6 +68,7 @@ public class EvaluationService : IEvaluationService
 
         foreach (var testCase in testSet.TestCases)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation("Starting evaluation for test case: {TestId}", testCase.TestId);
 
             // Run multiple iterations for better reliability
@@ -75,29 +77,42 @@ public class EvaluationService : IEvaluationService
                 var iterationNumber = iteration; // Capture for closure
 
                 // Wait for a slot to become available
-                await semaphore.WaitAsync();
+                await semaphore.WaitAsync(cancellationToken);
 
                 var task = Task.Run(async () =>
                 {
                     try
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         await using ScenarioRun scenarioRun = await _reportingConfiguration.CreateScenarioRunAsync(
                             scenarioName: testCase.TestId,
                             iterationName: iterationNumber.ToString(),
                             additionalTags: GetTagsForTestCase(testCase));
 
                         // Get model response using the target chat client
-                        var modelResponse = await targetChatClient.GetResponseAsync(testCase.Messages);
+                        var modelResponse = await ExecuteWithTimeoutAsync(
+                            async (ct) => await targetChatClient.GetResponseAsync(testCase.Messages, new ChatOptions(), ct),
+                            TimeSpan.FromMinutes(5),
+                            cancellationToken);
 
                         // Evaluate using all evaluators in the scenario run
-                        var result = await scenarioRun.EvaluateAsync(
-                            testCase.Messages,
-                            modelResponse,
-                            additionalContext: CreateAdditionalContextForScenario(testCase));
+                        var result = await ExecuteWithTimeoutAsync(
+                            async (ct) => await scenarioRun.EvaluateAsync(
+                                testCase.Messages,
+                                modelResponse,
+                                additionalContext: CreateAdditionalContextForScenario(testCase),
+                                cancellationToken: ct),
+                            TimeSpan.FromMinutes(3),
+                            cancellationToken);
 
                         _logger.LogInformation(
                             "Completed evaluation: TestId={TestId}, Iteration={Iteration}",
                             testCase.TestId, iterationNumber);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -108,21 +123,32 @@ public class EvaluationService : IEvaluationService
                     {
                         semaphore.Release(); // Release the semaphore slot
                     }
-                });
+                }, cancellationToken);
 
                 evaluationTasks.Add(task);
             }
         }
 
-        // Wait for all evaluations to complete
-        await Task.WhenAll(evaluationTasks);
+        try
+        {
+            // Wait for all evaluations to complete
+            await Task.WhenAll(evaluationTasks);
 
-        _logger.LogInformation("Evaluation run completed. Results stored in: {StoragePath}",
-            _settings.StorageRootPath);
+            _logger.LogInformation("Evaluation run completed. Results stored in: {StoragePath}",
+                _settings.StorageRootPath);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Evaluation run was cancelled. Partial results may be stored in: {StoragePath}",
+                _settings.StorageRootPath);
+            throw;
+        }
     }
 
-    public async Task GenerateReportAsync()
+    public async Task GenerateReportAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var storagePath = Path.GetFullPath(_settings.StorageRootPath);
         var instructions = $"""
         Report generation instructions:
@@ -138,14 +164,32 @@ public class EvaluationService : IEvaluationService
         await Task.CompletedTask;
     }
 
-    private async Task<EvaluationTestSet> LoadTestDataAsync(string testDataPath)
+    private async Task<T> ExecuteWithTimeoutAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        using var timeoutCts = new CancellationTokenSource(timeout);
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        try
+        {
+            return await operation(combinedCts.Token);
+        }
+        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Operation timed out after {timeout.TotalMinutes} minutes");
+        }
+    }
+
+    private async Task<EvaluationTestSet> LoadTestDataAsync(string testDataPath, CancellationToken cancellationToken)
     {
         if (!File.Exists(testDataPath))
         {
             throw new FileNotFoundException($"Test data file not found: {testDataPath}");
         }
 
-        var jsonContent = await File.ReadAllTextAsync(testDataPath);
+        var jsonContent = await File.ReadAllTextAsync(testDataPath, cancellationToken);
         var testSet = JsonSerializer.Deserialize<EvaluationTestSet>(jsonContent, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
