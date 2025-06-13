@@ -315,6 +315,7 @@ public class EvaluationService : IEvaluationService
         {
             messages.Add(new ChatMessage(ChatRole.User, testCase.GroundTruth));
         }
+
         else if (!string.IsNullOrEmpty(testCase.GroundingContext))
         {
             messages.Add(new ChatMessage(ChatRole.User, testCase.GroundingContext));
