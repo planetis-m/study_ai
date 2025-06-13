@@ -9,6 +9,7 @@ using PdfAiEvaluator.Converters;
 using PdfAiEvaluator.Validation;
 using PdfAiEvaluator.Models;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PdfAiEvaluator.Services;
 
@@ -244,7 +245,7 @@ public class EvaluationService : IEvaluationService
         var testSet = JsonSerializer.Deserialize<EvaluationTestSet>(jsonContent, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new ChatMessageJsonConverter() }
+            Converters = { new JsonStringEnumConverter(), new ChatMessageJsonConverter() }
         });
 
         return testSet ?? throw new InvalidOperationException("Failed to deserialize test data");
