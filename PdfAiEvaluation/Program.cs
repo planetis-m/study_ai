@@ -41,7 +41,7 @@ class Program
             {
                 // Configuration
                 services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
-                services.Configure<EvaluationSettings>(configuration.GetSection(EvaluationSettings.SectionName));
+                services.Configure<EvaluationsConfiguration>(configuration.GetSection(EvaluationsConfiguration.SectionName));
 
                 // Services
                 services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
@@ -58,25 +58,73 @@ class Program
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         var evaluationService = host.Services.GetRequiredService<IEvaluationService>();
-        var settings = host.Services.GetRequiredService<IOptions<EvaluationSettings>>().Value;
+        var evaluationsConfig = host.Services.GetRequiredService<IOptions<EvaluationsConfiguration>>().Value;
 
         try
         {
             logger.LogInformation("Starting Prompt Quality Evaluation Application");
 
-            // Ensure test data exists
-            if (!File.Exists(settings.TestDataPath))
+            // Check if we have any evaluations configured
+            if (!evaluationsConfig.HasEvaluations)
             {
-                logger.LogError("Test data file not found: {TestDataPath}. " +
-                    "Please ensure the test data file exists before running evaluation.", settings.TestDataPath);
+                logger.LogError("No evaluations found in configuration. Please ensure the 'Evaluations' section contains at least one evaluation.");
                 return ExitCode.Failure;
             }
 
-            // Run evaluation with cancellation token
-            await evaluationService.RunEvaluationAsync(settings.TestDataPath, cts.Token);
+            logger.LogInformation("Found {Count} evaluation(s) configured", evaluationsConfig.Evaluations.Count);
 
-            // Provide report generation instructions
-            await evaluationService.GenerateReportAsync(cts.Token);
+            // Check for command line arguments to run specific evaluation
+            if (args.Length > 0)
+            {
+                var evaluationName = args[0];
+                var specificEvaluation = evaluationsConfig.GetEvaluationByName(evaluationName);
+
+                if (specificEvaluation == null)
+                {
+                    logger.LogError("Evaluation '{EvaluationName}' not found. Available evaluations: {AvailableEvaluations}",
+                        evaluationName,
+                        string.Join(", ", evaluationsConfig.Evaluations.Select(e => e.ExecutionName)));
+                    return ExitCode.Failure;
+                }
+
+                logger.LogInformation("Running specific evaluation: {EvaluationName}", evaluationName);
+
+                // Validate test data exists
+                if (!File.Exists(specificEvaluation.TestDataPath))
+                {
+                    logger.LogError("Test data file not found for evaluation '{EvaluationName}': {TestDataPath}",
+                        specificEvaluation.ExecutionName, specificEvaluation.TestDataPath);
+                    return ExitCode.Failure;
+                }
+
+                // Run specific evaluation
+                await evaluationService.RunEvaluationAsync(specificEvaluation, cts.Token);
+
+                // Generate report for this specific evaluation
+                await evaluationService.GenerateReportAsync(specificEvaluation.StorageRootPath, cts.Token);
+            }
+            else
+            {
+                logger.LogInformation("Running all evaluations");
+
+                // Validate all test data files exist
+                var missingFiles = evaluationsConfig.Evaluations
+                    .Where(e => !File.Exists(e.TestDataPath))
+                    .ToList();
+
+                if (missingFiles.Any())
+                {
+                    foreach (var evaluation in missingFiles)
+                    {
+                        logger.LogError("Test data file not found for evaluation '{EvaluationName}': {TestDataPath}",
+                            evaluation.ExecutionName, evaluation.TestDataPath);
+                    }
+                    return ExitCode.Failure;
+                }
+
+                // Run all evaluations
+                await evaluationService.RunAllEvaluationsAsync(evaluationsConfig.Evaluations, cts.Token);
+            }
 
             logger.LogInformation("Application completed successfully");
             return ExitCode.Success;

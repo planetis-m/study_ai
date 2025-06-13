@@ -3,76 +3,74 @@ using Microsoft.Extensions.AI.Evaluation;
 using Microsoft.Extensions.AI.Evaluation.Quality;
 using Microsoft.Extensions.AI.Evaluation.Reporting;
 using Microsoft.Extensions.AI.Evaluation.Reporting.Storage;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using PdfAiEvaluator.Configuration;
 using PdfAiEvaluator.Converters;
 using PdfAiEvaluator.Validation;
 using PdfAiEvaluator.Models;
 using System.Text.Json;
-using System.Threading;
 
 namespace PdfAiEvaluator.Services;
 
 public class EvaluationService : IEvaluationService
 {
     private readonly IAiServiceFactory _aiServiceFactory;
-    private readonly EvaluationSettings _settings;
     private readonly ILogger<EvaluationService> _logger;
-    private ReportingConfiguration? _reportingConfiguration;
 
     public EvaluationService(
         IAiServiceFactory aiServiceFactory,
-        IOptions<EvaluationSettings> settings,
         ILogger<EvaluationService> logger)
     {
         _aiServiceFactory = aiServiceFactory;
-        _settings = Guard.NotNullOptions(settings, nameof(settings));
         _logger = logger;
     }
 
-    public async Task RunEvaluationAsync(string testDataPath, CancellationToken cancellationToken = default)
+    public async Task RunEvaluationAsync(EvaluationSettings settings, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _logger.LogInformation("Starting evaluation run...");
+        _logger.LogInformation("Starting evaluation run for: {EvaluationName}", settings.ExecutionName);
+
+        // Validate settings
+        ValidateEvaluationSettings(settings);
 
         // Load test data
-        var testSet = await LoadTestDataAsync(testDataPath, cancellationToken);
+        var testSet = await LoadTestDataAsync(settings.TestDataPath, cancellationToken);
 
         // Create chat clients
         var targetChatClient = _aiServiceFactory.CreateChatClient(
-            _settings.TargetProvider,
-            _settings.TargetModel);
+            settings.TargetProvider,
+            settings.TargetModel);
 
         var evaluatorChatClient = _aiServiceFactory.CreateChatClient(
-            _settings.EvaluatorProvider,
-            _settings.EvaluatorModel);
+            settings.EvaluatorProvider,
+            settings.EvaluatorModel);
 
         // Create evaluators
         var evaluators = CreateEvaluators();
 
         // Create reporting configuration with disk-based storage
-        _reportingConfiguration = DiskBasedReportingConfiguration.Create(
-            storageRootPath: _settings.StorageRootPath,
+        var reportingConfiguration = DiskBasedReportingConfiguration.Create(
+            storageRootPath: settings.StorageRootPath,
             evaluators: evaluators,
             chatConfiguration: new ChatConfiguration(evaluatorChatClient),
-            enableResponseCaching: _settings.EnableResponseCaching,
-            timeToLiveForCacheEntries: TimeSpan.FromHours(_settings.TimeToLiveHours),
-            executionName: _settings.ExecutionName,
+            enableResponseCaching: settings.EnableResponseCaching,
+            timeToLiveForCacheEntries: TimeSpan.FromHours(settings.TimeToLiveHours),
+            executionName: settings.ExecutionName,
             tags: ["prompt-quality", "evaluation"]
         );
 
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
-        var semaphore = new SemaphoreSlim(_settings.MaxConcurrentRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxConcurrentRequests);
 
         foreach (var testCase in testSet.TestCases)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _logger.LogInformation("Starting evaluation for test case: {TestId}", testCase.TestId);
+            _logger.LogInformation("Starting evaluation for test case: {TestId} in {EvaluationName}",
+                testCase.TestId, settings.ExecutionName);
 
             // Run multiple iterations for better reliability
-            for (int iteration = 1; iteration <= _settings.RequestsPerTestCase; iteration++)
+            for (int iteration = 1; iteration <= settings.RequestsPerTestCase; iteration++)
             {
                 var iterationNumber = iteration; // Capture for closure
 
@@ -85,14 +83,24 @@ public class EvaluationService : IEvaluationService
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        await using ScenarioRun scenarioRun = await _reportingConfiguration.CreateScenarioRunAsync(
+                        await using ScenarioRun scenarioRun = await reportingConfiguration.CreateScenarioRunAsync(
                             scenarioName: testCase.TestId,
                             iterationName: iterationNumber.ToString(),
                             additionalTags: GetTagsForTestCase(testCase));
 
+                        // Create chat options using the evaluation's ChatSettings
+                        var chatOptions = new ChatOptions
+                        {
+                            MaxOutputTokens = settings.TargetSettings.MaxOutputTokens,
+                            Temperature = settings.TargetSettings.Temperature,
+                            TopP = settings.TargetSettings.TopP,
+                            FrequencyPenalty = settings.TargetSettings.FrequencyPenalty,
+                            PresencePenalty = settings.TargetSettings.PresencePenalty
+                        };
+
                         // Get model response using the target chat client
                         var modelResponse = await ExecuteWithTimeoutAsync(
-                            async (ct) => await targetChatClient.GetResponseAsync(testCase.Messages, new ChatOptions(), ct),
+                            async (ct) => await targetChatClient.GetResponseAsync(testCase.Messages, chatOptions, ct),
                             TimeSpan.FromMinutes(5),
                             cancellationToken);
 
@@ -107,8 +115,8 @@ public class EvaluationService : IEvaluationService
                             cancellationToken);
 
                         _logger.LogInformation(
-                            "Completed evaluation: TestId={TestId}, Iteration={Iteration}",
-                            testCase.TestId, iterationNumber);
+                            "Completed evaluation: TestId={TestId}, Iteration={Iteration}, Evaluation={EvaluationName}",
+                            testCase.TestId, iterationNumber, settings.ExecutionName);
                     }
                     catch (OperationCanceledException)
                     {
@@ -116,8 +124,8 @@ public class EvaluationService : IEvaluationService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error evaluating test case: {TestId}, Iteration: {Iteration}",
-                            testCase.TestId, iterationNumber);
+                        _logger.LogError(ex, "Error evaluating test case: {TestId}, Iteration: {Iteration}, Evaluation: {EvaluationName}",
+                            testCase.TestId, iterationNumber, settings.ExecutionName);
                     }
                     finally
                     {
@@ -134,22 +142,50 @@ public class EvaluationService : IEvaluationService
             // Wait for all evaluations to complete
             await Task.WhenAll(evaluationTasks);
 
-            _logger.LogInformation("Evaluation run completed. Results stored in: {StoragePath}",
-                _settings.StorageRootPath);
+            _logger.LogInformation("Evaluation run completed for {EvaluationName}. Results stored in: {StoragePath}",
+                settings.ExecutionName, settings.StorageRootPath);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Evaluation run was cancelled. Partial results may be stored in: {StoragePath}",
-                _settings.StorageRootPath);
+            _logger.LogInformation("Evaluation run was cancelled for {EvaluationName}. Partial results may be stored in: {StoragePath}",
+                settings.ExecutionName, settings.StorageRootPath);
             throw;
         }
     }
 
-    public async Task GenerateReportAsync(CancellationToken cancellationToken = default)
+    public async Task RunAllEvaluationsAsync(IEnumerable<EvaluationSettings> evaluations, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Starting all evaluations. Total count: {Count}", evaluations.Count());
+
+        var storagePaths = new List<string>();
+
+        foreach (var evaluation in evaluations)
+        {
+            try
+            {
+                await RunEvaluationAsync(evaluation, cancellationToken);
+                storagePaths.Add(evaluation.StorageRootPath);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Evaluation sequence was cancelled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to run evaluation: {EvaluationName}", evaluation.ExecutionName);
+                // Continue with other evaluations even if one fails
+            }
+        }
+
+        _logger.LogInformation("All evaluations completed");
+    }
+
+    public async Task GenerateReportAsync(string storagePath, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var storagePath = Path.GetFullPath(_settings.StorageRootPath);
+        var fullStoragePath = Path.GetFullPath(storagePath);
         var instructions = $"""
         Report generation instructions:
         1. Install the AI evaluation console tool:
@@ -157,11 +193,28 @@ public class EvaluationService : IEvaluationService
             dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
 
         2. Generate HTML report:
-            dotnet aieval report --path "{storagePath}" --output report.html --open
+            dotnet aieval report --path "{fullStoragePath}" --output report.html --open
         """;
 
         _logger.LogInformation(instructions);
         await Task.CompletedTask;
+    }
+
+    private void ValidateEvaluationSettings(EvaluationSettings settings)
+    {
+        Guard.NotNullOrWhiteSpace(settings.TestDataPath, nameof(settings.TestDataPath));
+        Guard.NotNullOrWhiteSpace(settings.StorageRootPath, nameof(settings.StorageRootPath));
+        Guard.NotNullOrWhiteSpace(settings.ExecutionName, nameof(settings.ExecutionName));
+        Guard.NotNullOrWhiteSpace(settings.EvaluatorProvider, nameof(settings.EvaluatorProvider));
+        Guard.NotNullOrWhiteSpace(settings.EvaluatorModel, nameof(settings.EvaluatorModel));
+        Guard.NotNullOrWhiteSpace(settings.TargetProvider, nameof(settings.TargetProvider));
+        Guard.NotNullOrWhiteSpace(settings.TargetModel, nameof(settings.TargetModel));
+        Guard.NotNull(settings.TargetSettings, nameof(settings.TargetSettings));
+
+        if (!File.Exists(settings.TestDataPath))
+        {
+            throw new FileNotFoundException($"Test data file not found: {settings.TestDataPath}");
+        }
     }
 
     private async Task<T> ExecuteWithTimeoutAsync<T>(

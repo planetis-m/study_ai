@@ -1,7 +1,10 @@
+using PdfAiEvaluator.Configuration;
+
 namespace PdfAiEvaluator.Services;
 
 public interface IEvaluationService
 {
-    Task RunEvaluationAsync(string testDataPath, CancellationToken cancellationToken);
-    Task GenerateReportAsync(CancellationToken cancellationToken);
+    Task RunEvaluationAsync(EvaluationSettings settings, CancellationToken cancellationToken);
+    Task RunAllEvaluationsAsync(IEnumerable<EvaluationSettings> evaluations, CancellationToken cancellationToken);
+    Task GenerateReportAsync(string storagePath, CancellationToken cancellationToken);
 }
