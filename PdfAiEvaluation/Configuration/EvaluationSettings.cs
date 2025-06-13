@@ -9,8 +9,8 @@ public class EvaluationSettings
     public string ExecutionName { get; set; } = "PromptQualityEvaluation";
     public bool EnableResponseCaching { get; set; } = true;
     public int TimeToLiveHours { get; set; } = 6;
-    public int MaxConcurrentRequests { get; set; } = 1;
-    public int RequestsPerTestCase { get; set; } = 3;
+    public int MaxConcurrentEvaluations { get; set; } = 1;
+    public int IterationsPerTestCase { get; set; } = 3;
     public string EvaluatorProvider { get; set; } = "AzureAI";
     public string EvaluatorModel { get; set; } = string.Empty;
     public string TargetProvider { get; set; } = "AzureAI";

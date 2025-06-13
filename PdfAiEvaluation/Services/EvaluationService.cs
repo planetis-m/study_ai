@@ -61,7 +61,7 @@ public class EvaluationService : IEvaluationService
 
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
-        var semaphore = new SemaphoreSlim(settings.MaxConcurrentRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxConcurrentEvaluations);
 
         foreach (var testCase in testSet.TestCases)
         {
@@ -70,7 +70,7 @@ public class EvaluationService : IEvaluationService
                 testCase.TestId, settings.ExecutionName);
 
             // Run multiple iterations for better reliability
-            for (int iteration = 1; iteration <= settings.RequestsPerTestCase; iteration++)
+            for (int iteration = 1; iteration <= settings.IterationsPerTestCase; iteration++)
             {
                 var iterationNumber = iteration; // Capture for closure
 
