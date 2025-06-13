@@ -45,8 +45,17 @@ public class EvaluationService : IEvaluationService
             settings.EvaluatorProvider,
             settings.EvaluatorModel);
 
-        // Create evaluators
-        var evaluators = CreateEvaluators();
+        // Create evaluators based on the test set configuration
+        var evaluators = CreateEvaluators(testSet.Evaluators);
+
+        // Validate that evaluators are configured
+        if (evaluators.Count == 0)
+        {
+            throw new InvalidOperationException($"No evaluators configured for '{settings.ExecutionName}'. Please specify evaluators in the test data.");
+        }
+
+        _logger.LogInformation("Using evaluators: {Evaluators} for: {EvaluationName}",
+            string.Join(", ", testSet.Evaluators), settings.ExecutionName);
 
         // Create reporting configuration with disk-based storage
         var reportingConfiguration = DiskBasedReportingConfiguration.Create(
@@ -189,25 +198,6 @@ public class EvaluationService : IEvaluationService
         _logger.LogInformation("All evaluations completed");
     }
 
-    public async Task GenerateReportAsync(string storagePath, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var fullStoragePath = Path.GetFullPath(storagePath);
-        var instructions = $"""
-        Report generation instructions:
-        1. Install the AI evaluation console tool:
-            dotnet new tool-manifest
-            dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
-
-        2. Generate HTML report:
-            dotnet aieval report --path "{fullStoragePath}" --output report.html --open
-        """;
-
-        _logger.LogInformation(instructions);
-        await Task.CompletedTask;
-    }
-
     private void ValidateEvaluationSettings(EvaluationSettings settings)
     {
         Guard.NotNullOrWhiteSpace(settings.TestDataPath, nameof(settings.TestDataPath));
@@ -260,14 +250,27 @@ public class EvaluationService : IEvaluationService
         return testSet ?? throw new InvalidOperationException("Failed to deserialize test data");
     }
 
-    private List<IEvaluator> CreateEvaluators()
+    private List<IEvaluator> CreateEvaluators(List<EvaluatorType> evaluatorTypes)
     {
-        return new List<IEvaluator>
+        var evaluators = new List<IEvaluator>();
+
+        foreach (var evaluatorType in evaluatorTypes)
         {
-            new CompletenessEvaluator(),
-            new EquivalenceEvaluator(),
-            new GroundednessEvaluator()
-        };
+            IEvaluator evaluator = evaluatorType switch
+            {
+                EvaluatorType.Coherence => new CoherenceEvaluator(),
+                EvaluatorType.Completeness => new CompletenessEvaluator(),
+                EvaluatorType.Equivalence => new EquivalenceEvaluator(),
+                EvaluatorType.Fluency => new FluencyEvaluator(),
+                EvaluatorType.Groundedness => new GroundednessEvaluator(),
+                EvaluatorType.Relevance => new RelevanceEvaluator(),
+                _ => throw new ArgumentException($"Unknown evaluator type: {evaluatorType}")
+            };
+
+            evaluators.Add(evaluator);
+        }
+
+        return evaluators;
     }
 
     public static List<string> GetTagsForTestCase(EvaluationTestData testCase)
@@ -315,17 +318,7 @@ public class EvaluationService : IEvaluationService
 
     private List<ChatMessage> PrepareMessagesForTarget(EvaluationTestSet testSet, EvaluationTestData testCase)
     {
-        var messages = new List<ChatMessage>();
-
-        if (testSet.Messages?.Count > 0)
-        {
-            messages.AddRange(testSet.Messages);
-        }
-
-        if (testCase.Messages?.Count > 0)
-        {
-            messages.AddRange(testCase.Messages);
-        }
+        var messages = PrepareMessagesForEvaluation(testSet, testCase);
 
         if (!string.IsNullOrEmpty(testCase.GroundTruth))
         {

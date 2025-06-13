@@ -1,6 +1,7 @@
 {
   "Name": "PromptQualityTestSet",
   "Description": "Sample test cases for evaluating prompt quality using various evaluators",
+  "Evaluators": ["Completeness", "Groundedness", "Relevance"],
   "TestCases": [
     {
       "TestId": "completeness-test-1",

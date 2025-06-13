@@ -3,6 +3,16 @@ using Microsoft.Extensions.AI.Evaluation;
 
 namespace PdfAiEvaluator.Models;
 
+public enum EvaluatorType
+{
+    Coherence,
+    Completeness,
+    Equivalence,
+    Fluency,
+    Groundedness,
+    Relevance
+}
+
 public class EvaluationTestData
 {
     public string TestId { get; set; } = string.Empty;
@@ -20,4 +30,5 @@ public class EvaluationTestSet
     public string Description { get; set; } = string.Empty;
     public List<ChatMessage>? Messages { get; set; } = new();
     public List<EvaluationTestData> TestCases { get; set; } = new();
+    public List<EvaluatorType> Evaluators { get; set; } = new();
 }
