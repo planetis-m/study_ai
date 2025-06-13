@@ -110,7 +110,7 @@ public class EvaluationService : IEvaluationService
                             cancellationToken);
 
                         // Prepare messages for evaluation (without additional context to save tokens)
-                        var messagesForEvaluation = PrepareMessagesForEvaluation(testCase);
+                        var messagesForEvaluation = PrepareMessagesForEvaluation(testSet, testCase);
 
                         // Evaluate using all evaluators in the scenario run
                         var result = await ExecuteWithTimeoutAsync(
@@ -339,7 +339,7 @@ public class EvaluationService : IEvaluationService
         return messages;
     }
 
-    private List<ChatMessage> PrepareMessagesForEvaluation(EvaluationTestData testCase)
+    private List<ChatMessage> PrepareMessagesForEvaluation(EvaluationTestSet testSet, EvaluationTestData testCase)
     {
         var messages = new List<ChatMessage>();
 
