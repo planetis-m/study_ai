@@ -21,7 +21,7 @@ public abstract class AiServiceBase
     {
         Guard.NotNull(settings, nameof(settings));
         Guard.NotNullOrWhiteSpace(settings.SystemMessage, nameof(settings.SystemMessage));
-        Guard.NotNullOrWhiteSpace(settings.UserMessage, nameof(settings.UserMessage));
+        Guard.NotNullOrWhiteSpace(settings.TaskPrompt, nameof(settings.TaskPrompt));
         Guard.NotNullOrWhiteSpace(settings.Provider, nameof(settings.Provider));
         Guard.NotNullOrWhiteSpace(settings.ModelName, nameof(settings.ModelName));
 
@@ -31,7 +31,7 @@ public abstract class AiServiceBase
         var messages = new List<ChatMessage>
         {
             new(ChatRole.System, settings.SystemMessage),
-            new(ChatRole.User, settings.UserMessage)
+            new(ChatRole.User, settings.TaskPrompt)
         };
 
         var response = await TimeoutHelper.ExecuteWithTimeoutAsync(

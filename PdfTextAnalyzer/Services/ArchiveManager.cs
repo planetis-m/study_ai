@@ -10,12 +10,12 @@ using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
-public class PipelineArchiveManager : IPipelineArchiveManager
+public class ArchiveManager : IArchiveManager
 {
     private readonly ArchiveSettings _settings;
     private readonly ApplicationSettings _appSettings;
 
-    public PipelineArchiveManager(
+    public ArchiveManager(
         ApplicationSettings appSettings,
         IOptions<ArchiveSettings> settings)
     {
@@ -92,12 +92,12 @@ public class PipelineArchiveManager : IPipelineArchiveManager
         // Only include model info for stages that are enabled
         if (settings.Pipeline.Preprocessing)
         {
-            config.PreprocessingModel = settings.Preprocessing.Model;
+            config.Preprocessing = settings.Preprocessing;
         }
 
         if (settings.Pipeline.Analysis)
         {
-            config.AnalysisModel = settings.Analysis.Model;
+            config.Analysis = settings.Analysis;
         }
 
         // Create hash of the minimal configuration for integrity checking
@@ -160,6 +160,6 @@ public class ArchiveConfiguration
     public string ConfigurationHash { get; set; } = string.Empty;
 
     // Only include model info for active stages
-    public ModelSettings? PreprocessingModel { get; set; }
-    public ModelSettings? AnalysisModel { get; set; }
+    public ModelSettings? Preprocessing { get; set; }
+    public ModelSettings? Analysis { get; set; }
 }

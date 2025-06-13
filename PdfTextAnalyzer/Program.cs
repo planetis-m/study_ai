@@ -51,7 +51,7 @@ class Program
                 // Register pipeline services
                 services.AddScoped<IPipelineCore, PipelineCore>();
                 services.AddScoped<IPipelinePresenter, PipelinePresenter>();
-                services.AddScoped<IPipelineArchiveManager, PipelineArchiveManager>();
+                services.AddScoped<IArchiveManager, ArchiveManager>();
             })
             .Build();
 

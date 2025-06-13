@@ -20,7 +20,7 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
     {
         Guard.NotNullOrWhiteSpace(text, nameof(text));
 
-        _settings.UserMessage = $"{_settings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
+        _settings.TaskPrompt = $"{_settings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
 
         try
         {

@@ -11,14 +11,14 @@ public class PipelineCore : IPipelineCore
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly ITextCleaningService _textCleaning;
     private readonly ITextAnalysisService _textAnalysis;
-    private readonly IPipelineArchiveManager _archiveManager;
+    private readonly IArchiveManager _archiveManager;
     private readonly PipelineSettings _pipelineSettings;
 
     public PipelineCore(
         IPdfTextExtractor pdfExtractor,
         ITextCleaningService textCleaning,
         ITextAnalysisService textAnalysis,
-        IPipelineArchiveManager archiveManager,
+        IArchiveManager archiveManager,
         IOptions<PipelineSettings> pipelineSettings)
     {
         _pdfExtractor = Guard.NotNull(pdfExtractor, nameof(pdfExtractor));

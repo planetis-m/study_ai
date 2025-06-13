@@ -20,7 +20,7 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
     {
         Guard.NotNullOrWhiteSpace(rawText, nameof(rawText));
 
-        _settings.UserMessage = $"{_settings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
+        _settings.TaskPrompt = $"{_settings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
 
         try
         {
