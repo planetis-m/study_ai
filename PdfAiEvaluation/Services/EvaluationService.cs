@@ -62,6 +62,7 @@ public class EvaluationService : IEvaluationService
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
         var semaphore = new SemaphoreSlim(settings.MaxConcurrentEvaluations);
+        var scenarioName = $"{testSet.Name}.{testCase.TestId}";
 
         foreach (var testCase in testSet.TestCases)
         {
@@ -84,7 +85,7 @@ public class EvaluationService : IEvaluationService
                         cancellationToken.ThrowIfCancellationRequested();
 
                         await using ScenarioRun scenarioRun = await reportingConfiguration.CreateScenarioRunAsync(
-                            scenarioName: testCase.TestId,
+                            scenarioName: scenarioName,
                             iterationName: iterationNumber.ToString(),
                             additionalTags: GetTagsForTestCase(testCase));
 
@@ -111,7 +112,7 @@ public class EvaluationService : IEvaluationService
                                 modelResponse,
                                 additionalContext: CreateAdditionalContextForScenario(testCase),
                                 cancellationToken: ct),
-                            TimeSpan.FromMinutes(3),
+                            TimeSpan.FromMinutes(5),
                             cancellationToken);
 
                         _logger.LogInformation(

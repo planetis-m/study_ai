@@ -1,5 +1,5 @@
 {
-  "Name": "Prompt Quality Evaluation Test Set",
+  "Name": "PromptQualityTestSet",
   "Description": "Sample test cases for evaluating prompt quality using various evaluators",
   "TestCases": [
     {
