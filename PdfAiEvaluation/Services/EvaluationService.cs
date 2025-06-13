@@ -116,7 +116,7 @@ public class EvaluationService : IEvaluationService
                         // Get model response using the target chat client
                         var modelResponse = await ExecuteWithTimeoutAsync(
                             async (ct) => await targetChatClient.GetResponseAsync(messagesForTarget, chatOptions, ct),
-                            TimeSpan.FromMinutes(3),
+                            TimeSpan.FromMinutes(settings.ModelResponseTimeout),
                             cancellationToken);
 
                         // Prepare messages for evaluation (without additional context to save tokens)
@@ -129,7 +129,7 @@ public class EvaluationService : IEvaluationService
                                 modelResponse,
                                 additionalContext: CreateAdditionalContextForScenario(testCase),
                                 cancellationToken: ct),
-                            TimeSpan.FromMinutes(3),
+                            TimeSpan.FromMinutes(settings.EvaluationTimeout),
                             cancellationToken);
 
                         _logger.LogInformation(
