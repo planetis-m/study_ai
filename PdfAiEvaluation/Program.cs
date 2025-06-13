@@ -101,7 +101,7 @@ class Program
                 await evaluationService.RunEvaluationAsync(specificEvaluation, cts.Token);
 
                 // Generate report for this specific evaluation
-                GenerateReport(specificEvaluation.StorageRootPath, logger);
+                ReportGenerator.GenerateReport(specificEvaluation.StorageRootPath, logger);
             }
             else
             {
@@ -126,7 +126,7 @@ class Program
                 await evaluationService.RunAllEvaluationsAsync(evaluationsConfig, cts.Token);
 
                 // Generate report
-                GenerateReport(@"<path\to\your\cache\storage>", logger);
+                ReportGenerator.GenerateReportTemplate(logger);
             }
 
             logger.LogInformation("Application completed successfully");
@@ -142,21 +142,5 @@ class Program
             logger.LogError(ex, "An error occurred during evaluation");
             return ExitCode.Failure;
         }
-    }
-
-    private static void GenerateReport(string storagePath, ILogger logger)
-    {
-        var fullStoragePath = Path.GetFullPath(storagePath);
-        var instructions = $"""
-        Report generation instructions:
-        1. Install the AI evaluation console tool:
-            dotnet new tool-manifest
-            dotnet tool install Microsoft.Extensions.AI.Evaluation.Console
-
-        2. Generate HTML report:
-            dotnet aieval report --path "{fullStoragePath}" --output report.html --open
-        """;
-
-        logger.LogInformation(instructions);
     }
 }
