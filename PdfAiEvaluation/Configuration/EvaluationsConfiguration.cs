@@ -1,6 +1,6 @@
 namespace PdfAiEvaluator.Configuration;
 
-public class EvaluationsConfiguration
+public class EvaluationsConfiguration : List<EvaluationSettings>
 {
     public const string SectionName = "Evaluations";
 

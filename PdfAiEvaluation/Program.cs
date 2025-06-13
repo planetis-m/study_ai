@@ -71,7 +71,7 @@ class Program
                 return ExitCode.Failure;
             }
 
-            logger.LogInformation("Found {Count} evaluation(s) configured", evaluationsConfig.Evaluations.Count);
+            logger.LogInformation("Found {Count} evaluation(s) configured", evaluationsConfig.Count);
 
             // Check for command line arguments to run specific evaluation
             if (args.Length > 0)
@@ -83,7 +83,7 @@ class Program
                 {
                     logger.LogError("Evaluation '{EvaluationName}' not found. Available evaluations: {AvailableEvaluations}",
                         evaluationName,
-                        string.Join(", ", evaluationsConfig.Evaluations.Select(e => e.ExecutionName)));
+                        string.Join(", ", evaluationsConfig.Select(e => e.ExecutionName)));
                     return ExitCode.Failure;
                 }
 
@@ -108,7 +108,7 @@ class Program
                 logger.LogInformation("Running all evaluations");
 
                 // Validate all test data files exist
-                var missingFiles = evaluationsConfig.Evaluations
+                var missingFiles = evaluationsConfig
                     .Where(e => !File.Exists(e.TestDataPath))
                     .ToList();
 
@@ -123,7 +123,7 @@ class Program
                 }
 
                 // Run all evaluations
-                await evaluationService.RunAllEvaluationsAsync(evaluationsConfig.Evaluations, cts.Token);
+                await evaluationService.RunAllEvaluationsAsync(evaluationsConfig, cts.Token);
 
                 // Generate report
                 GenerateReport(@"<path\to\your\cache\storage>", logger);
