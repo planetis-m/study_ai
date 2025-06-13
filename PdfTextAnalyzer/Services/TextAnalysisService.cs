@@ -20,16 +20,11 @@ public class TextAnalysisService : AiServiceBase, ITextAnalysisService
     {
         Guard.NotNullOrWhiteSpace(text, nameof(text));
 
-        var userMessage = $"{_settings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
+        _settings.UserMessage = $"{_settings.TaskPrompt}\n\n---\n\nSlide content:\n{text}";
 
         try
         {
-            return await CallAiServiceAsync(
-                _settings.SystemMessage,
-                userMessage,
-                _settings.Model,
-                cancellationToken
-            );
+            return await CallAiServiceAsync(_settings, cancellationToken);
         }
         catch (OperationCanceledException)
         {

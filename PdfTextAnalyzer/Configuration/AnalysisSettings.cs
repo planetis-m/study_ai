@@ -1,10 +1,6 @@
 namespace PdfTextAnalyzer.Configuration;
 
-public class AnalysisSettings
+public class AnalysisSettings : ModelSettings
 {
     public const string SectionName = "Analysis";
-
-    public ModelSettings Model { get; set; } = new();
-    public string SystemMessage { get; set; } = string.Empty;
-    public string TaskPrompt { get; set; } = string.Empty;
 }

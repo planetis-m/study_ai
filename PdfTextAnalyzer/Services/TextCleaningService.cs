@@ -20,16 +20,11 @@ public class TextCleaningService : AiServiceBase, ITextCleaningService
     {
         Guard.NotNullOrWhiteSpace(rawText, nameof(rawText));
 
-        var userMessage = $"{_settings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
+        _settings.UserMessage = $"{_settings.TaskPrompt}\n\n---\n\nRaw text:\n{rawText}";
 
         try
         {
-            return await CallAiServiceAsync(
-                _settings.SystemMessage,
-                userMessage,
-                _settings.Model,
-                cancellationToken
-            );
+            return await CallAiServiceAsync(_settings, cancellationToken);
         }
         catch (OperationCanceledException)
         {

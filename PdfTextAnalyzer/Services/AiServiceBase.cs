@@ -16,26 +16,26 @@ public abstract class AiServiceBase
     }
 
     protected async Task<string> CallAiServiceAsync(
-        string systemMessage,
-        string userMessage,
-        ModelSettings modelSettings,
+        ModelSettings settings,
         CancellationToken cancellationToken)
     {
-        Guard.NotNullOrWhiteSpace(systemMessage, nameof(systemMessage));
-        Guard.NotNullOrWhiteSpace(userMessage, nameof(userMessage));
-        Guard.NotNull(modelSettings, nameof(modelSettings));
+        Guard.NotNull(settings, nameof(settings));
+        Guard.NotNullOrWhiteSpace(settings.SystemMessage, nameof(settings.SystemMessage));
+        Guard.NotNullOrWhiteSpace(settings.UserMessage, nameof(settings.UserMessage));
+        Guard.NotNullOrWhiteSpace(settings.Provider, nameof(settings.Provider));
+        Guard.NotNullOrWhiteSpace(settings.ModelName, nameof(settings.ModelName));
 
         // Create chat client for this specific model/provider combination
-        var chatClient = _aiServiceFactory.CreateChatClient(modelSettings.Provider, modelSettings.ModelName);
+        var chatClient = _aiServiceFactory.CreateChatClient(settings.Provider, settings.ModelName);
 
         var messages = new List<ChatMessage>
         {
-            new(ChatRole.System, systemMessage),
-            new(ChatRole.User, userMessage)
+            new(ChatRole.System, settings.SystemMessage),
+            new(ChatRole.User, settings.UserMessage)
         };
 
         var response = await TimeoutHelper.ExecuteWithTimeoutAsync(
-            async (ct) => await chatClient.GetResponseAsync(messages, modelSettings.Options, ct),
+            async (ct) => await chatClient.GetResponseAsync(messages, settings.Options, ct),
             TimeSpan.FromMinutes(5),
             cancellationToken);
 
@@ -43,7 +43,7 @@ public abstract class AiServiceBase
 
         if (string.IsNullOrWhiteSpace(message))
         {
-            throw new InvalidOperationException($"({modelSettings.Provider}) returned empty response");
+            throw new InvalidOperationException($"({settings.Provider}) returned empty response");
         }
 
         return message;
