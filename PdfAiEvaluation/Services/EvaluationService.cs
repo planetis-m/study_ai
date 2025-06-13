@@ -62,13 +62,14 @@ public class EvaluationService : IEvaluationService
         // Run evaluations for each test case with multiple iterations
         var evaluationTasks = new List<Task>();
         var semaphore = new SemaphoreSlim(settings.MaxConcurrentEvaluations);
-        var scenarioName = $"{testSet.Name}.{testCase.TestId}";
 
         foreach (var testCase in testSet.TestCases)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _logger.LogInformation("Starting evaluation for test case: {TestId} in {EvaluationName}",
-                testCase.TestId, settings.ExecutionName);
+
+            var scenarioName = $"{testSet.Name}.{testCase.TestId}";
+            _logger.LogInformation("Starting evaluation for scenario: {ScenarioName} in {EvaluationName}",
+                scenarioName, settings.ExecutionName);
 
             // Run multiple iterations for better reliability
             for (int iteration = 1; iteration <= settings.IterationsPerTestCase; iteration++)
@@ -116,8 +117,8 @@ public class EvaluationService : IEvaluationService
                             cancellationToken);
 
                         _logger.LogInformation(
-                            "Completed evaluation: TestId={TestId}, Iteration={Iteration}, Evaluation={EvaluationName}",
-                            testCase.TestId, iterationNumber, settings.ExecutionName);
+                            "Completed evaluation: Scenario={ScenarioName}, Iteration={Iteration}, Evaluation={EvaluationName}",
+                            scenarioName, iterationNumber, settings.ExecutionName);
                     }
                     catch (OperationCanceledException)
                     {
@@ -125,8 +126,8 @@ public class EvaluationService : IEvaluationService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error evaluating test case: {TestId}, Iteration: {Iteration}, Evaluation: {EvaluationName}",
-                            testCase.TestId, iterationNumber, settings.ExecutionName);
+                        _logger.LogError(ex, "Error evaluating Scenario: {ScenarioName}, Iteration: {Iteration}, Evaluation: {EvaluationName}",
+                            scenarioName, iterationNumber, settings.ExecutionName);
                     }
                     finally
                     {
