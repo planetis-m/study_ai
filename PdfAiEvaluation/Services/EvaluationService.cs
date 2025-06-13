@@ -100,16 +100,22 @@ public class EvaluationService : IEvaluationService
                             PresencePenalty = settings.TargetSettings.PresencePenalty
                         };
 
+                        // Prepare messages for the target chat client (including additional context)
+                        var messagesForTarget = PrepareMessagesForTarget(testSet, testCase);
+
                         // Get model response using the target chat client
                         var modelResponse = await ExecuteWithTimeoutAsync(
-                            async (ct) => await targetChatClient.GetResponseAsync(testCase.Messages, chatOptions, ct),
+                            async (ct) => await targetChatClient.GetResponseAsync(messagesForTarget, chatOptions, ct),
                             TimeSpan.FromMinutes(5),
                             cancellationToken);
+
+                        // Prepare messages for evaluation (without additional context to save tokens)
+                        var messagesForEvaluation = PrepareMessagesForEvaluation(testCase);
 
                         // Evaluate using all evaluators in the scenario run
                         var result = await ExecuteWithTimeoutAsync(
                             async (ct) => await scenarioRun.EvaluateAsync(
-                                testCase.Messages,
+                                messagesForEvaluation,
                                 modelResponse,
                                 additionalContext: CreateAdditionalContextForScenario(testCase),
                                 cancellationToken: ct),
@@ -286,12 +292,16 @@ public class EvaluationService : IEvaluationService
     {
         var context = new List<EvaluationContext>();
 
-        // Add context based on what's available in the test case
         if (!string.IsNullOrEmpty(testCase.GroundTruth))
         {
-            // Add contexts that use ground truth
+            // Add context that uses ground truth
             context.Add(new CompletenessEvaluatorContext(testCase.GroundTruth));
-            context.Add(new EquivalenceEvaluatorContext(testCase.GroundTruth));
+        }
+
+        if (!string.IsNullOrEmpty(testCase.GoldenAnswer))
+        {
+            // Add context that uses reference answer
+            context.Add(new EquivalenceEvaluatorContext(testCase.GoldenAnswer));
         }
 
         if (!string.IsNullOrEmpty(testCase.GroundingContext))
@@ -301,5 +311,48 @@ public class EvaluationService : IEvaluationService
         }
 
         return context;
+    }
+
+    private List<ChatMessage> PrepareMessagesForTarget(EvaluationTestSet testSet, EvaluationTestData testCase)
+    {
+        var messages = new List<ChatMessage>();
+
+        if (testSet.Messages?.Count > 0)
+        {
+            messages.AddRange(testSet.Messages);
+        }
+
+        if (testCase.Messages?.Count > 0)
+        {
+            messages.AddRange(testCase.Messages);
+        }
+
+        if (!string.IsNullOrEmpty(testCase.GroundTruth))
+        {
+            messages.Add(new ChatMessage(ChatRole.User, testCase.GroundTruth));
+        }
+        else if (!string.IsNullOrEmpty(testCase.GroundingContext))
+        {
+            messages.Add(new ChatMessage(ChatRole.User, testCase.GroundingContext));
+        }
+
+        return messages;
+    }
+
+    private List<ChatMessage> PrepareMessagesForEvaluation(EvaluationTestData testCase)
+    {
+        var messages = new List<ChatMessage>();
+
+        if (testSet.Messages?.Count > 0)
+        {
+            messages.AddRange(testSet.Messages);
+        }
+
+        if (testCase.Messages?.Count > 0)
+        {
+            messages.AddRange(testCase.Messages);
+        }
+
+        return messages;
     }
 }
