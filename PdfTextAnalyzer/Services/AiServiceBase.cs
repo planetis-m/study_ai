@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
 using PdfTextAnalyzer.Validation;
+using PdfTextAnalyzer.Utilities;
 
 namespace PdfTextAnalyzer.Services;
 
@@ -33,7 +34,7 @@ public abstract class AiServiceBase
             new(ChatRole.User, userMessage)
         };
 
-        var response = await ExecuteWithTimeoutAsync(
+        var response = await TimeoutHelper.ExecuteWithTimeoutAsync(
             async (ct) => await chatClient.GetResponseAsync(messages, modelSettings.Options, ct),
             TimeSpan.FromMinutes(5),
             cancellationToken);
@@ -46,23 +47,5 @@ public abstract class AiServiceBase
         }
 
         return message;
-    }
-
-    private async Task<T> ExecuteWithTimeoutAsync<T>(
-        Func<CancellationToken, Task<T>> operation,
-        TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        using var timeoutCts = new CancellationTokenSource(timeout);
-        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-
-        try
-        {
-            return await operation(combinedCts.Token);
-        }
-        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException($"Operation timed out after {timeout.TotalMinutes} minutes");
-        }
     }
 }

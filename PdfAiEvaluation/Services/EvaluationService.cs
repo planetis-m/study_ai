@@ -1,16 +1,11 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI.Evaluation;
-using Microsoft.Extensions.AI.Evaluation.Quality;
 using Microsoft.Extensions.AI.Evaluation.Reporting;
 using Microsoft.Extensions.AI.Evaluation.Reporting.Storage;
 using Microsoft.Extensions.Logging;
 using PdfAiEvaluator.Configuration;
-using PdfAiEvaluator.Converters;
-using PdfAiEvaluator.Validation;
 using PdfAiEvaluator.Models;
 using PdfAiEvaluator.Utilities;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace PdfAiEvaluator.Services;
 
@@ -33,10 +28,10 @@ public class EvaluationService : IEvaluationService
         _logger.LogInformation("Starting evaluation run for: {EvaluationName}", settings.ExecutionName);
 
         // Validate settings
-        ValidateEvaluationSettings(settings);
+        EvaluationValidator.ValidateEvaluationSettings(settings);
 
         // Load test data
-        var testSet = await LoadTestDataAsync(settings.TestDataPath, cancellationToken);
+        var testSet = await TestDataLoader.LoadTestDataAsync(settings.TestDataPath, cancellationToken);
 
         // Create chat clients
         var targetChatClient = _aiServiceFactory.CreateChatClient(
@@ -48,7 +43,7 @@ public class EvaluationService : IEvaluationService
             settings.EvaluatorModel);
 
         // Create evaluators based on the test set configuration
-        var evaluators = CreateEvaluators(testSet.Evaluators);
+        var evaluators = EvaluationFactory.CreateEvaluators(testSet.Evaluators);
 
         // Validate that evaluators are configured
         if (evaluators.Count == 0)
@@ -102,23 +97,23 @@ public class EvaluationService : IEvaluationService
                             additionalTags: TagsHelper.GetTags(testCase));
 
                         // Prepare messages for the target chat client (including additional context)
-                        var messagesForTarget = PrepareMessagesForTarget(testSet, testCase);
+                        var messagesForTarget = MessagePreparer.PrepareMessagesForTarget(testSet, testCase);
 
                         // Get model response using the target chat client
-                        var modelResponse = await ExecuteWithTimeoutAsync(
+                        var modelResponse = await TimeoutHelper.ExecuteWithTimeoutAsync(
                             async (ct) => await targetChatClient.GetResponseAsync(messagesForTarget, settings.TargetOptions, ct),
                             TimeSpan.FromMinutes(settings.ModelResponseTimeout),
                             cancellationToken);
 
                         // Prepare messages for evaluation (without additional context to save tokens)
-                        var messagesForEvaluation = PrepareMessagesForEvaluation(testSet, testCase);
+                        var messagesForEvaluation = MessagePreparer.PrepareMessagesForEvaluation(testSet, testCase);
 
                         // Evaluate using all evaluators in the scenario run
-                        var result = await ExecuteWithTimeoutAsync(
+                        var result = await TimeoutHelper.ExecuteWithTimeoutAsync(
                             async (ct) => await scenarioRun.EvaluateAsync(
                                 messagesForEvaluation,
                                 modelResponse,
-                                additionalContext: CreateAdditionalContextForScenario(testCase),
+                                additionalContext: EvaluationFactory.CreateAdditionalContextForScenario(testCase),
                                 cancellationToken: ct),
                             TimeSpan.FromMinutes(settings.EvaluationTimeout),
                             cancellationToken);
@@ -188,139 +183,5 @@ public class EvaluationService : IEvaluationService
         }
 
         _logger.LogInformation("All evaluations completed");
-    }
-
-    private void ValidateEvaluationSettings(EvaluationSettings settings)
-    {
-        Guard.NotNullOrWhiteSpace(settings.TestDataPath, nameof(settings.TestDataPath));
-        Guard.NotNullOrWhiteSpace(settings.StorageRootPath, nameof(settings.StorageRootPath));
-        Guard.NotNullOrWhiteSpace(settings.ExecutionName, nameof(settings.ExecutionName));
-        Guard.NotNullOrWhiteSpace(settings.EvaluatorProvider, nameof(settings.EvaluatorProvider));
-        Guard.NotNullOrWhiteSpace(settings.EvaluatorModel, nameof(settings.EvaluatorModel));
-        Guard.NotNullOrWhiteSpace(settings.TargetProvider, nameof(settings.TargetProvider));
-        Guard.NotNullOrWhiteSpace(settings.TargetModel, nameof(settings.TargetModel));
-        Guard.NotNull(settings.TargetOptions, nameof(settings.TargetOptions));
-
-        if (!File.Exists(settings.TestDataPath))
-        {
-            throw new FileNotFoundException($"Test data file not found: {settings.TestDataPath}");
-        }
-    }
-
-    private async Task<T> ExecuteWithTimeoutAsync<T>(
-        Func<CancellationToken, Task<T>> operation,
-        TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        using var timeoutCts = new CancellationTokenSource(timeout);
-        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-
-        try
-        {
-            return await operation(combinedCts.Token);
-        }
-        catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException($"Operation timed out after {timeout.TotalMinutes} minutes");
-        }
-    }
-
-    private async Task<EvaluationTestSet> LoadTestDataAsync(string testDataPath, CancellationToken cancellationToken)
-    {
-        if (!File.Exists(testDataPath))
-        {
-            throw new FileNotFoundException($"Test data file not found: {testDataPath}");
-        }
-
-        var jsonContent = await File.ReadAllTextAsync(testDataPath, cancellationToken);
-        var testSet = JsonSerializer.Deserialize<EvaluationTestSet>(jsonContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter(), new ChatMessageJsonConverter() }
-        });
-
-        return testSet ?? throw new InvalidOperationException("Failed to deserialize test data");
-    }
-
-    private List<IEvaluator> CreateEvaluators(List<EvaluatorType> evaluatorTypes)
-    {
-        var evaluators = new List<IEvaluator>();
-
-        foreach (var evaluatorType in evaluatorTypes)
-        {
-            IEvaluator evaluator = evaluatorType switch
-            {
-                EvaluatorType.Coherence => new CoherenceEvaluator(),
-                EvaluatorType.Completeness => new CompletenessEvaluator(),
-                EvaluatorType.Equivalence => new EquivalenceEvaluator(),
-                EvaluatorType.Fluency => new FluencyEvaluator(),
-                EvaluatorType.Groundedness => new GroundednessEvaluator(),
-                EvaluatorType.Relevance => new RelevanceEvaluator(),
-                _ => throw new ArgumentException($"Unknown evaluator type: {evaluatorType}")
-            };
-
-            evaluators.Add(evaluator);
-        }
-
-        return evaluators;
-    }
-
-    private List<EvaluationContext> CreateAdditionalContextForScenario(EvaluationTestData testCase)
-    {
-        var context = new List<EvaluationContext>();
-
-        if (!string.IsNullOrEmpty(testCase.GroundTruth))
-        {
-            // Add context that uses ground truth
-            context.Add(new CompletenessEvaluatorContext(testCase.GroundTruth));
-        }
-
-        if (!string.IsNullOrEmpty(testCase.GoldenAnswer))
-        {
-            // Add context that uses reference answer
-            context.Add(new EquivalenceEvaluatorContext(testCase.GoldenAnswer));
-        }
-
-        if (!string.IsNullOrEmpty(testCase.GroundingContext))
-        {
-            // Add context for groundedness evaluation
-            context.Add(new GroundednessEvaluatorContext(testCase.GroundingContext));
-        }
-
-        return context;
-    }
-
-    private List<ChatMessage> PrepareMessagesForTarget(EvaluationTestSet testSet, EvaluationTestData testCase)
-    {
-        var messages = PrepareMessagesForEvaluation(testSet, testCase);
-
-        if (!string.IsNullOrEmpty(testCase.GroundTruth))
-        {
-            messages.Add(new ChatMessage(ChatRole.User, testCase.GroundTruth));
-        }
-
-        else if (!string.IsNullOrEmpty(testCase.GroundingContext))
-        {
-            messages.Add(new ChatMessage(ChatRole.User, testCase.GroundingContext));
-        }
-
-        return messages;
-    }
-
-    private List<ChatMessage> PrepareMessagesForEvaluation(EvaluationTestSet testSet, EvaluationTestData testCase)
-    {
-        var messages = new List<ChatMessage>();
-
-        if (testSet.Messages?.Count > 0)
-        {
-            messages.AddRange(testSet.Messages);
-        }
-
-        if (testCase.Messages?.Count > 0)
-        {
-            messages.AddRange(testCase.Messages);
-        }
-
-        return messages;
     }
 }
