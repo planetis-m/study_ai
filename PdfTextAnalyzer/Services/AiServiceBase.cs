@@ -8,6 +8,8 @@ namespace PdfTextAnalyzer.Services;
 
 public abstract class AiServiceBase
 {
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+
     protected readonly IAiServiceFactory _aiServiceFactory;
 
     protected AiServiceBase(IAiServiceFactory aiServiceFactory)
@@ -36,7 +38,7 @@ public abstract class AiServiceBase
 
         var response = await TimeoutHelper.ExecuteWithTimeoutAsync(
             async (ct) => await chatClient.GetResponseAsync(messages, settings.Options, ct),
-            TimeSpan.FromMinutes(5),
+            DefaultTimeout,
             cancellationToken);
 
         var message = response.Text;
