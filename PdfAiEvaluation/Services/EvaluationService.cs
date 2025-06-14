@@ -161,14 +161,11 @@ public class EvaluationService : IEvaluationService
     {
         _logger.LogInformation("Starting all evaluations. Total count: {Count}", evaluations.Count());
 
-        var storagePaths = new List<string>();
-
         foreach (var evaluation in evaluations)
         {
             try
             {
                 await RunEvaluationAsync(evaluation, cancellationToken);
-                storagePaths.Add(evaluation.StorageRootPath);
             }
             catch (OperationCanceledException)
             {
