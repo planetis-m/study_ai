@@ -28,7 +28,10 @@ public class EvaluationService : IEvaluationService
         _logger.LogInformation("Starting evaluation run for: {EvaluationName}", settings.ExecutionName);
 
         // Validate settings
-        EvaluationValidator.ValidateEvaluationSettings(settings);
+        if (!File.Exists(settings.TestDataPath))
+        {
+            throw new FileNotFoundException($"Test data file not found: {settings.TestDataPath}");
+        }
 
         // Load test data
         var testSet = await TestDataLoader.LoadTestDataAsync(settings.TestDataPath, cancellationToken);
