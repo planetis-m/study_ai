@@ -27,8 +27,8 @@ public class EvaluationTestData : TagsHelper.IHasTags
 
 public class EvaluationTestSet : TagsHelper.IHasTags
 {
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    public string? Name { get; set; } // Human-readable; not used
+    public string? Description { get; set; } // Human-readable; not used
     public List<EvaluatorType> Evaluators { get; set; } = new();
     public List<ChatMessage>? Messages { get; set; }
     public List<EvaluationTestData> TestCases { get; set; } = new();

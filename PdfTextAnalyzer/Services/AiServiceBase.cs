@@ -22,10 +22,6 @@ public abstract class AiServiceBase
         CancellationToken cancellationToken)
     {
         Guard.NotNull(settings, nameof(settings));
-        Guard.NotNullOrWhiteSpace(settings.SystemMessage, nameof(settings.SystemMessage));
-        Guard.NotNullOrWhiteSpace(settings.TaskPrompt, nameof(settings.TaskPrompt));
-        Guard.NotNullOrWhiteSpace(settings.Provider, nameof(settings.Provider));
-        Guard.NotNullOrWhiteSpace(settings.ModelName, nameof(settings.ModelName));
 
         // Create chat client for this specific model/provider combination
         var chatClient = _aiServiceFactory.CreateChatClient(settings.Provider, settings.ModelName);

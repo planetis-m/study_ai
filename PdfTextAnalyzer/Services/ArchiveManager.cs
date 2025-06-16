@@ -32,7 +32,6 @@ public class ArchiveManager : IArchiveManager
     public async Task ArchiveResultAsync(PipelineResult result, CancellationToken cancellationToken)
     {
         Guard.NotNull(result, nameof(result));
-        Guard.ConfigurationNotNullOrWhiteSpace(_settings.BaseArchiveDirectory, "Archive:BaseArchiveDirectory");
 
         try
         {

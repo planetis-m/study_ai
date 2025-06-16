@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PdfTextAnalyzer.Configuration;
 
 public class AiSettings
@@ -11,16 +13,21 @@ public class AiSettings
 
 public class AzureAISettings
 {
+    [Required]
+    [Url]
     public string Endpoint { get; set; } = "https://models.github.ai/inference";
+    [Required]
     public string ApiKey { get; set; } = string.Empty;
 }
 
 public class GoogleAISettings
 {
+    [Required]
     public string ApiKey { get; set; } = string.Empty;
 }
 
 public class OpenAISettings
 {
+    [Required]
     public string ApiKey { get; set; } = string.Empty;
 }

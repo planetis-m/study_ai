@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using PdfTextAnalyzer.Configuration;
 using PdfTextAnalyzer.Services;
 
@@ -33,42 +34,40 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        // Build host with simplified configuration
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((context, services) =>
-            {
-                // Register all configuration sections through extension method
-                services.RegisterConfiguration(configuration);
-
-                // Register AI service factory
-                services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
-
-                // Register services
-                services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
-                services.AddScoped<ITextCleaningService, TextCleaningService>();
-                services.AddScoped<ITextAnalysisService, TextAnalysisService>();
-
-                // Register pipeline services
-                services.AddScoped<IPipelineCore, PipelineCore>();
-                services.AddScoped<IPipelinePresenter, PipelinePresenter>();
-                services.AddScoped<IArchiveManager, ArchiveManager>();
-            })
-            .Build();
-
-        // Get the service and run
-        var pdfAnalysisPipeline = host.Services.GetRequiredService<IPipelinePresenter>();
-
-        if (args.Length == 0)
-        {
-            Console.WriteLine("Usage: PdfTextAnalyzer <path-to-pdf-file>");
-            Console.WriteLine("Example: PdfTextAnalyzer sample.pdf");
-            return ExitCode.Failure;
-        }
-
-        var pdfPath = args[0];
-
         try
         {
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
+                {
+                    // Register all configuration sections through extension method
+                    services.RegisterConfiguration(configuration);
+
+                    // Register AI service factory
+                    services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
+
+                    // Register services
+                    services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+                    services.AddScoped<ITextCleaningService, TextCleaningService>();
+                    services.AddScoped<ITextAnalysisService, TextAnalysisService>();
+
+                    // Register pipeline services
+                    services.AddScoped<IPipelineCore, PipelineCore>();
+                    services.AddScoped<IPipelinePresenter, PipelinePresenter>();
+                    services.AddScoped<IArchiveManager, ArchiveManager>();
+                })
+                .Build();
+
+            // Get the service and run
+            var pdfAnalysisPipeline = host.Services.GetRequiredService<IPipelinePresenter>();
+
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Usage: PdfTextAnalyzer <path-to-pdf-file>");
+                Console.WriteLine("Example: PdfTextAnalyzer sample.pdf");
+                return ExitCode.Failure;
+            }
+
+            var pdfPath = args[0];
             await pdfAnalysisPipeline.AnalyzePdfAsync(pdfPath, cts.Token);
             Console.WriteLine("Processing completed successfully!");
             return ExitCode.Success;
@@ -76,6 +75,15 @@ class Program
         catch (OperationCanceledException)
         {
             Console.WriteLine("Operation was cancelled by user.");
+            return ExitCode.Failure;
+        }
+        catch (OptionsValidationException ex)
+        {
+            Console.WriteLine("Configuration validation failed:");
+            foreach (var failure in ex.Failures)
+            {
+                Console.WriteLine($"  - {failure}");
+            }
             return ExitCode.Failure;
         }
         catch (Exception ex)

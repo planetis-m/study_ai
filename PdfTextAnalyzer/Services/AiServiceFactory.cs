@@ -7,11 +7,6 @@ using PdfTextAnalyzer.Validation;
 
 namespace PdfTextAnalyzer.Services;
 
-public interface IAiServiceFactory
-{
-    IChatClient CreateChatClient(string provider, string model);
-}
-
 public class AiServiceFactory : IAiServiceFactory
 {
     private readonly AiSettings _settings;
@@ -37,10 +32,6 @@ public class AiServiceFactory : IAiServiceFactory
     private IChatClient CreateAzureAIChatClient(string model)
     {
         var settings = _settings.AzureAI;
-
-        Guard.ConfigurationNotNullOrWhiteSpace(settings.Endpoint, "AI:AzureAI:Endpoint");
-        Guard.ConfigurationNotNullOrWhiteSpace(settings.ApiKey, "AI:AzureAI:ApiKey");
-
         // Create Azure AI chat client
         return new Azure.AI.Inference.ChatCompletionsClient(new Uri(settings.Endpoint),
             new AzureKeyCredential(settings.ApiKey)).AsIChatClient(model);
@@ -49,9 +40,6 @@ public class AiServiceFactory : IAiServiceFactory
     private IChatClient CreateGoogleGenerativeAIChatClient(string model)
     {
         var settings = _settings.GoogleAI;
-
-        Guard.ConfigurationNotNullOrWhiteSpace(settings.ApiKey, "AI:GoogleAI:ApiKey");
-
         // Create Google Generative AI chat client
         return new GenerativeAIChatClient(settings.ApiKey, model);
     }
@@ -59,9 +47,6 @@ public class AiServiceFactory : IAiServiceFactory
     private IChatClient CreateOpenAIChatClient(string model)
     {
         var settings = _settings.OpenAI;
-
-        Guard.ConfigurationNotNullOrWhiteSpace(settings.ApiKey, "AI:OpenAI:ApiKey");
-
         // Create OpenAI chat client
         return new OpenAI.Chat.ChatClient(model, settings.ApiKey).AsIChatClient();
     }
