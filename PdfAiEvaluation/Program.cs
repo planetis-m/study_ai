@@ -149,7 +149,7 @@ class Program
         {
             if (logger != null)
             {
-                logger?.LogInformation("Application was cancelled by user");
+                logger.LogInformation("Application was cancelled by user");
             }
             return ExitCode.Failure;
         }
@@ -157,7 +157,7 @@ class Program
         {
             if (logger != null)
             {
-                logger?.LogError(ex, "An error occurred during evaluation");
+                logger.LogError(ex, "An error occurred during evaluation");
             }
             return ExitCode.Failure;
         }
