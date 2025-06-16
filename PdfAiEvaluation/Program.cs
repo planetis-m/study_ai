@@ -135,21 +135,30 @@ class Program
         }
         catch (OptionsValidationException ex)
         {
-            logger?.LogError("Configuration validation failed:");
-            foreach (var failure in ex.Failures)
+            if (logger != null)
             {
-                logger?.LogError($"  - {failure}");
+                logger.LogError("Configuration validation failed:");
+                foreach (var failure in ex.Failures)
+                {
+                    logger.LogError($"  - {failure}");
+                }
             }
             return ExitCode.Failure;
         }
         catch (OperationCanceledException)
         {
-            logger?.LogInformation("Application was cancelled by user");
+            if (logger != null)
+            {
+                logger?.LogInformation("Application was cancelled by user");
+            }
             return ExitCode.Failure;
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "An error occurred during evaluation");
+            if (logger != null)
+            {
+                logger?.LogError(ex, "An error occurred during evaluation");
+            }
             return ExitCode.Failure;
         }
     }
