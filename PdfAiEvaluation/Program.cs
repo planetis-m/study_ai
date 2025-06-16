@@ -35,33 +35,34 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        // Build host
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((context, services) =>
-            {
-                // Configuration
-                services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
-                services.Configure<EvaluationsConfiguration>(configuration.GetSection(EvaluationsConfiguration.SectionName));
-
-                // Services
-                services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
-                services.AddScoped<IEvaluationService, EvaluationService>();
-
-                // Logging
-                services.AddLogging(builder =>
-                {
-                    builder.AddConsole();
-                    builder.SetMinimumLevel(LogLevel.Information);
-                });
-            })
-            .Build();
-
-        var logger = host.Services.GetRequiredService<ILogger<Program>>();
-        var evaluationService = host.Services.GetRequiredService<IEvaluationService>();
-        var evaluationsConfig = host.Services.GetRequiredService<IOptions<EvaluationsConfiguration>>().Value;
-
+        ILogger<Program>? logger = null;
         try
         {
+            // Build host
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
+                {
+                    // Configuration
+                    services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
+                    services.Configure<EvaluationsConfiguration>(configuration.GetSection(EvaluationsConfiguration.SectionName));
+
+                    // Services
+                    services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
+                    services.AddScoped<IEvaluationService, EvaluationService>();
+
+                    // Logging
+                    services.AddLogging(builder =>
+                    {
+                        builder.AddConsole();
+                        builder.SetMinimumLevel(LogLevel.Information);
+                    });
+                })
+                .Build();
+
+            logger = host.Services.GetRequiredService<ILogger<Program>>();
+            var evaluationService = host.Services.GetRequiredService<IEvaluationService>();
+            var evaluationsConfig = host.Services.GetRequiredService<IOptions<EvaluationsConfiguration>>().Value;
+
             logger.LogInformation("Starting Prompt Quality Evaluation Application");
 
             // Check if we have any evaluations configured
@@ -132,14 +133,23 @@ class Program
             logger.LogInformation("Application completed successfully");
             return ExitCode.Success;
         }
+        catch (OptionsValidationException ex)
+        {
+            logger?.LogError("Configuration validation failed:");
+            foreach (var failure in ex.Failures)
+            {
+                logger?.LogError($"  - {failure}");
+            }
+            return ExitCode.Failure;
+        }
         catch (OperationCanceledException)
         {
-            logger.LogInformation("Application was cancelled by user");
+            logger?.LogInformation("Application was cancelled by user");
             return ExitCode.Failure;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred during evaluation");
+            logger?.LogError(ex, "An error occurred during evaluation");
             return ExitCode.Failure;
         }
     }

@@ -45,12 +45,6 @@ public class EvaluationService : IEvaluationService
         // Create evaluators based on the test set configuration
         var evaluators = EvaluationFactory.CreateEvaluators(testSet.Evaluators);
 
-        // Validate that evaluators are configured
-        if (evaluators.Count == 0)
-        {
-            throw new InvalidOperationException($"No evaluators configured for '{settings.ExecutionName}'. Please specify evaluators in the test data.");
-        }
-
         _logger.LogInformation("Using evaluators: {Evaluators} for: {EvaluationName}",
             string.Join(", ", testSet.Evaluators), settings.ExecutionName);
 

@@ -19,10 +19,4 @@ public static class Guard
     {
         return options?.Value ?? throw new ArgumentNullException(paramName);
     }
-
-    public static void ConfigurationNotNullOrWhiteSpace(string? value, string configPath)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new InvalidOperationException($"{configPath} not configured");
-    }
 }
